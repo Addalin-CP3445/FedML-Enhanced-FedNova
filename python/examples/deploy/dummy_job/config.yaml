@@ -1,0 +1,6 @@
+workspace: "./src"
+entry_point: "serve_main.py"
+bootstrap: |
+  echo "Bootstrap start..."
+  sleep 5
+  echo "Bootstrap finished"
