@@ -31,6 +31,11 @@ from .constants import (
 )
 from .core.common.ml_engine_backend import MLEngineBackend
 
+import wandb
+
+# Set the wandb API key
+wandb.login(key='63a4dccbf22454ee89c03213ddaba326fa6d7460')
+
 _global_training_type = None
 _global_comm_backend = None
 
@@ -272,7 +277,6 @@ def _manage_profiling_args(args):
                 wandb_args["name"] = f"Client {args.rank}"
                 wandb_args["job_type"] = str(args.rank)
 
-            import wandb
 
             wandb.init(**wandb_args)
 
