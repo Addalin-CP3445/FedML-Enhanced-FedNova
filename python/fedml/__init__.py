@@ -33,9 +33,6 @@ from .core.common.ml_engine_backend import MLEngineBackend
 
 import wandb
 
-# Set the wandb API key
-wandb.login(key='63a4dccbf22454ee89c03213ddaba326fa6d7460')
-
 _global_training_type = None
 _global_comm_backend = None
 
@@ -67,6 +64,10 @@ __version__ = "0.8.30"
 
 
 def init(args=None, check_env=True, should_init_logs=True):
+
+    # Set the wandb API key
+    wandb.login(key=args.wandb_key)
+
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
