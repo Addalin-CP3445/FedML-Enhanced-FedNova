@@ -65,9 +65,6 @@ __version__ = "0.8.30"
 
 def init(args=None, check_env=True, should_init_logs=True):
 
-    # Set the wandb API key
-    wandb.login(key=args.wandb_key)
-
     if args is None:
         args = load_arguments(fedml._global_training_type, fedml._global_comm_backend)
 
