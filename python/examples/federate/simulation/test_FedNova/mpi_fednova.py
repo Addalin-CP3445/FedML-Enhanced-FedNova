@@ -9,7 +9,7 @@ if __name__ == "__main__":
     args = fedml.init()
 
     # init device
-    device = fedml.device.get_device(args)
+    # device = fedml.device.get_device(args)
 
     # load data
     dataset, output_dim = fedml.data.load(args)
