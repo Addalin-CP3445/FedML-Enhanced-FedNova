@@ -1,4 +1,5 @@
 from .utils import transform_tensor_to_list
+import wandb
 
 
 class FedNovaTrainer(object):
@@ -58,13 +59,28 @@ class FedNovaTrainer(object):
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
-        # lr = self.get_lr(round_idx)
-        # self.trainer.train(self.train_local, self.device, self.args, lr=lr)
         avg_loss, norm_grad, tau_eff = self.trainer.train(self.train_local, self.device, self.args,
             ratio=self.local_sample_number / self.total_train_num)
-        # weights = self.trainer.get_model_params()
+        
+        # Calculate training accuracy
+        correct = 0
+        total = 0
+        self.trainer.model.eval()
+        with torch.no_grad():
+            for data in self.train_local:
+                images, labels = data
+                images, labels = images.to(self.device), labels.to(self.device)
+                outputs = self.trainer.model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
 
-        # return weights, self.local_sample_number
+        train_accuracy = correct / total
+
+        # Log training loss and accuracy to WandB
+        if self.args.enable_wandb:
+            wandb.log({"Train/Loss": avg_loss, "Train/Acc": train_accuracy, "round": round_idx, "client_index": self.client_index})
+
         return avg_loss, norm_grad, tau_eff
 
 
@@ -84,6 +100,11 @@ class FedNovaTrainer(object):
             test_metrics["test_total"],
             test_metrics["test_loss"],
         )
+
+        if self.args.enable_wandb:
+            wandb.log({"Test/Acc": test_tot_correct / test_num_sample, "round": self.args.round_idx})
+            wandb.log({"Test/Loss": test_loss / test_num_sample, "round": self.args.round_idx})
+
 
         return (
             train_tot_correct,
