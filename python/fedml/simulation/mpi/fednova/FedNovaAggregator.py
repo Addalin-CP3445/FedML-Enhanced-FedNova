@@ -189,7 +189,7 @@ class FedNovaAggregator(object):
                 metrics = self.aggregator.test(self.val_global, self.device, self.args)
             
             # Log metrics to WandB
-            if self.args.enable_wandb:
-                wandb.log({"Test/Acc": metrics["test_acc"], "round": round_idx})
-                wandb.log({"Test/Loss": metrics["test_loss"], "round": round_idx})
-                wandb.log({"Test/Num_samples": metrics["test_total"], "round": round_idx})
+            # if self.args.enable_wandb:
+            #     wandb.log({"Test/Acc": metrics["test_acc"], "round": round_idx})
+            #     wandb.log({"Test/Loss": metrics["test_loss"], "round": round_idx})
+            #     wandb.log({"Test/Num_samples": metrics["test_total"], "round": round_idx})

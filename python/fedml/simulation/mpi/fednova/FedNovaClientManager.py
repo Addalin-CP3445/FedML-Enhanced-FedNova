@@ -107,8 +107,8 @@ class FedNovaClientManager(FedMLCommManager):
             self.trainer.update_dataset(int(client_index))
             # weights, local_sample_num = self.trainer.train(self.round_idx)
             loss, grad, t_eff = self.trainer.train(self.round_idx)
-            if self.args.enable_wandb:
-                wandb.log({"Train/Loss_client": loss, "client_index": client_index, "round": self.round_idx})
+            # if self.args.enable_wandb:
+            #     wandb.log({"Train/Loss_client": loss, "client_index": client_index, "round": self.round_idx})
 
             self.add_client_model(local_agg_model_params, client_index, grad, t_eff,
                                 weight=average_weight_dict[client_index])
