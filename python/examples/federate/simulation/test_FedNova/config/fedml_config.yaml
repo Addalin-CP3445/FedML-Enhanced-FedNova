@@ -17,7 +17,7 @@ train_args:
   client_num_in_total: 1000
   client_num_per_round: 10
   comm_round: 10
-  epochs: 1
+  epochs: 20
   batch_size: 10
   client_optimizer: sgd
   learning_rate: 0.03
