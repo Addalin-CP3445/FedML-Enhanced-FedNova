@@ -51,5 +51,5 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: test_fednova
-  run_name: fedml_fednova_mnist_lr
+  run_name: tester
   using_mlops: false
