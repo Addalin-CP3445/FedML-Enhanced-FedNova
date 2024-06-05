@@ -78,8 +78,7 @@ class FedNovaTrainer(object):
         train_accuracy = correct / total
 
         # Log training loss and accuracy to WandB
-        if self.args.enable_wandb:
-            wandb.log({"Train/Loss fednovatrainer": avg_loss, "Train/Acc fednovatrainer": train_accuracy})
+        wandb.log({"Train/Loss fednovatrainer": avg_loss, "Train/Acc fednovatrainer": train_accuracy})
 
         return avg_loss, norm_grad, tau_eff
 
@@ -101,9 +100,8 @@ class FedNovaTrainer(object):
             test_metrics["test_loss"],
         )
 
-        if self.args.enable_wandb:
-            wandb.log({"Test/Acc fednovatrainer": test_tot_correct / test_num_sample})
-            wandb.log({"Test/Loss fednovatrainer": test_loss / test_num_sample})
+        wandb.log({"Test/Acc fednovatrainer": test_tot_correct / test_num_sample})
+        wandb.log({"Test/Loss fednovatrainer": test_loss / test_num_sample})
 
 
         return (
