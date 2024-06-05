@@ -12,7 +12,7 @@ model_args:
   model: "lr"
 
 train_args:
-  federated_optimizer: "FedNova"
+  federated_optimizer: "FedSeg"
   client_id_list: "[]"
   client_num_in_total: 1000
   client_num_per_round: 10
