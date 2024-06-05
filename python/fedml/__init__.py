@@ -249,6 +249,13 @@ def _manage_profiling_args(args):
         from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
         MLOpsProfilerEvent.enable_sys_perf_profiling()
+    
+    if not args.enable_wandb:
+        wandb_args = {
+                    "project": args.wandb_project,
+                    "config": args,
+                }
+        wandb.init(**wandb_args)
 
     if hasattr(args, "enable_wandb") and args.enable_wandb:
         wandb_only_server = getattr(args, "wandb_only_server", None)
