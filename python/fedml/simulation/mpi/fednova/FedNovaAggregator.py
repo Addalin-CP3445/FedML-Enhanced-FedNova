@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 import torch
-# import wandb
+import wandb
 
 from .utils import transform_list_to_tensor
 from ....core.schedule.runtime_estimate import t_sample_fit
@@ -189,7 +189,7 @@ class FedNovaAggregator(object):
                 metrics = self.aggregator.test(self.val_global, self.device, self.args)
             
             # Log metrics to WandB
-            # if self.args.enable_wandb:
-            #     wandb.log({"Test/Acc": metrics["test_acc"], "round": round_idx})
-            #     wandb.log({"Test/Loss": metrics["test_loss"], "round": round_idx})
-            #     wandb.log({"Test/Num_samples": metrics["test_total"], "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc Fednovaaggregator": metrics["test_acc"]})
+                wandb.log({"Test/Loss Fednovaaggregator": metrics["test_loss"]})
+                wandb.log({"Test/Num_samples Fednovaaggregator": metrics["test_total"]})
