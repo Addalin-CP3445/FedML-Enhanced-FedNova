@@ -180,6 +180,7 @@ class FedNovaAggregator(object):
     def test_on_server_for_all_clients(self, round_idx):
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
+            metrics = {}
 
             self.args.round_idx = round_idx
             if round_idx == self.args.comm_round - 1:
