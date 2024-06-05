@@ -287,7 +287,7 @@ def _manage_profiling_args(args):
 
             from .core.mlops.mlops_profiler_event import MLOpsProfilerEvent
 
-            MLOpsProfilerEvent.enable_wandb_tracking()
+            # MLOpsProfilerEvent.enable_wandb_tracking()
 
 
 def _manage_cuda_rpc_args(args):
