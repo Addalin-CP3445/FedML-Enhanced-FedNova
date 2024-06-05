@@ -94,9 +94,9 @@ class MyServerAggregator(ServerAggregator):
         # test on test dataset
         test_acc = sum(test_tot_corrects) / sum(test_num_samples)
         test_loss = sum(test_losses) / sum(test_num_samples)
-        if self.args.enable_wandb:
-            wandb.log({"Test/Acc": test_acc, "round": args.round_idx})
-            wandb.log({"Test/Loss": test_loss, "round": args.round_idx})
+        # if self.args.enable_wandb:
+        #     wandb.log({"Test/Acc": test_acc, "round": args.round_idx})
+        #     wandb.log({"Test/Loss": test_loss, "round": args.round_idx})
 
         mlops.log({"Test/Acc": test_acc, "round": args.round_idx})
         mlops.log({"Test/Loss": test_loss, "round": args.round_idx})
@@ -126,9 +126,9 @@ class MyServerAggregator(ServerAggregator):
         # test on training dataset
         train_acc = sum(train_tot_corrects) / sum(train_num_samples)
         train_loss = sum(train_losses) / sum(train_num_samples)
-        if self.args.enable_wandb:
-            wandb.log({"Train/Acc": train_acc, "round": args.round_idx})
-            wandb.log({"Train/Loss": train_loss, "round": args.round_idx})
+        # if self.args.enable_wandb:
+        #     wandb.log({"Train/Acc": train_acc, "round": args.round_idx})
+        #     wandb.log({"Train/Loss": train_loss, "round": args.round_idx})
 
         mlops.log({"Train/Acc": train_acc, "round": args.round_idx})
         mlops.log({"Train/Loss": train_loss, "round": args.round_idx})
