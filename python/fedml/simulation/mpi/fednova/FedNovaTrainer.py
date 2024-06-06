@@ -1,6 +1,6 @@
 from .utils import transform_tensor_to_list
 import wandb
-
+import torch
 
 class FedNovaTrainer(object):
     def __init__(
