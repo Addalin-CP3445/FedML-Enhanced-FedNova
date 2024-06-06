@@ -193,5 +193,5 @@ class FedNovaAggregator(object):
 
             logging.info("@@@@@@@@@@@@@@@@@@@metrics for wandb: {}".format(metrics))
             
-            wandb.log({"Test/Acc Fednovaaggregator": metrics[0]})
-            wandb.log({"Test/Loss Fednovaaggregator": metrics[1]})
+            wandb.log({"Test/Acc Fednovaaggregator": metrics[0], "round": round_idx})
+            wandb.log({"Test/Loss Fednovaaggregator": metrics[1], "round": round_idx})
