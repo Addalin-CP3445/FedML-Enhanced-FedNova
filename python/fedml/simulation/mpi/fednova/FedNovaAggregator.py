@@ -178,6 +178,7 @@ class FedNovaAggregator(object):
             return self.test_global
 
     def test_on_server_for_all_clients(self, round_idx):
+        logging.info("@@@@@@@@@@@@@@@@@@@@@@ round_idx: {}".format(round_idx))
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
             metrics = []
@@ -189,6 +190,8 @@ class FedNovaAggregator(object):
                 metrics = self.aggregator.test(self.val_global, self.device, self.args)
             
             # Log metrics to WandB
+
+            logging.info("@@@@@@@@@@@@@@@@@@@metrics for wandb: {}".format(metrics))
             
             wandb.log({"Test/Acc Fednovaaggregator": metrics["test_acc"]})
             wandb.log({"Test/Loss Fednovaaggregator": metrics["test_loss"]})
