@@ -181,7 +181,7 @@ class FedNovaAggregator(object):
         logging.info("@@@@@@@@@@@@@@@@@@@@@@ round_idx: {}".format(round_idx))
         if round_idx % self.args.frequency_of_the_test == 0 or round_idx == self.args.comm_round - 1:
             logging.info("################test_on_server_for_all_clients : {}".format(round_idx))
-            metrics = []
+            metrics = [0,0]
 
             self.args.round_idx = round_idx
             if round_idx == self.args.comm_round - 1:
@@ -193,6 +193,5 @@ class FedNovaAggregator(object):
 
             logging.info("@@@@@@@@@@@@@@@@@@@metrics for wandb: {}".format(metrics))
             
-            wandb.log({"Test/Acc Fednovaaggregator": metrics["test_acc"]})
-            wandb.log({"Test/Loss Fednovaaggregator": metrics["test_loss"]})
-            wandb.log({"Test/Num_samples Fednovaaggregator": metrics["test_total"]})
+            wandb.log({"Test/Acc Fednovaaggregator": metrics[0]})
+            wandb.log({"Test/Loss Fednovaaggregator": metrics[1]})
