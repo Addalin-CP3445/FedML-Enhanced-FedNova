@@ -9,4 +9,4 @@ hostname > mpi_host_file
 
 mpirun -np $PROCESS_NUM \
 -hostfile mpi_host_file --oversubscribe \
-python mpi_fednova.py --cf config/fedml_config.yaml
+python mpi_fedavg.py --cf config/fedml_config.yaml
