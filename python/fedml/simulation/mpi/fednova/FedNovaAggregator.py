@@ -90,7 +90,8 @@ class FedNovaAggregator(object):
             logging.info(f"fit_params: {fit_params}")
             logging.info(f"fit_errors: {fit_errors}")
             avg_fit_error = sum(client_error for gpu_errors in fit_errors.values() for client_error in gpu_errors.values()) / sum(len(gpu_errors) for gpu_errors in fit_errors.values())
-            wandb.log({"RunTimeEstimateError": avg_fit_error, "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"RunTimeEstimateError": avg_fit_error, "round": round_idx})
 
             mode = 0
             workloads = np.array([self.train_data_local_num_dict[client_id] for client_id in client_indexes])
@@ -192,6 +193,6 @@ class FedNovaAggregator(object):
             # Log metrics to WandB
 
             logging.info("@@@@@@@@@@@@@@@@@@@metrics for wandb: {}".format(metrics))
-            
-            wandb.log({"Test/Acc Fednovaaggregator": metrics[0], "round": round_idx})
-            wandb.log({"Test/Loss Fednovaaggregator": metrics[1], "round": round_idx})
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc Fednovaaggregator": metrics[0], "round": round_idx})
+                wandb.log({"Test/Loss Fednovaaggregator": metrics[1], "round": round_idx})

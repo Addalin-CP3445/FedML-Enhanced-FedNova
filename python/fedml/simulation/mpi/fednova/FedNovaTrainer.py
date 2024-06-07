@@ -63,22 +63,22 @@ class FedNovaTrainer(object):
             ratio=self.local_sample_number / self.total_train_num)
         
         # Calculate training accuracy
-        correct = 0
-        total = 0
-        self.trainer.model.eval()
-        with torch.no_grad():
-            for data in self.train_local:
-                images, labels = data
-                images, labels = images.to(self.device), labels.to(self.device)
-                outputs = self.trainer.model(images)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
+        # correct = 0
+        # total = 0
+        # self.trainer.model.eval()
+        # with torch.no_grad():
+        #     for data in self.train_local:
+        #         images, labels = data
+        #         images, labels = images.to(self.device), labels.to(self.device)
+        #         outputs = self.trainer.model(images)
+        #         _, predicted = torch.max(outputs.data, 1)
+        #         total += labels.size(0)
+        #         correct += (predicted == labels).sum().item()
 
-        train_accuracy = correct / total
+        # train_accuracy = correct / total
 
         # Log training loss and accuracy to WandB
-        wandb.log({"Train/Loss fednovatrainer": avg_loss, "Train/Acc fednovatrainer": train_accuracy})
+        # wandb.log({"Train/Loss fednovatrainer": avg_loss, "Train/Acc fednovatrainer": train_accuracy})
 
         return avg_loss, norm_grad, tau_eff
 
@@ -99,9 +99,9 @@ class FedNovaTrainer(object):
             test_metrics["test_total"],
             test_metrics["test_loss"],
         )
-
-        wandb.log({"Test/Acc fednovatrainer": test_tot_correct / test_num_sample})
-        wandb.log({"Test/Loss fednovatrainer": test_loss / test_num_sample})
+        if self.args.enable_wandb:
+            wandb.log({"Test/Acc fednovatrainer": test_tot_correct / test_num_sample})
+            wandb.log({"Test/Loss fednovatrainer": test_loss / test_num_sample})
 
 
         return (
