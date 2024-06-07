@@ -163,11 +163,16 @@ class FedAVGAggregator(object):
                 self.args,
             )
 
+            metric_result_in_current_round = [0,0]
+
             if round_idx == self.args.comm_round - 1:
                 # we allow to return four metrics, such as accuracy, AUC, loss, etc.
                 metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
             else:
                 metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
             logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
+            if self.args.enable_wandb:
+                wandb.log({"Test/Acc FedAvgAggregator": metric_result_in_current_round[0], "round": round_idx})
+                wandb.log({"Test/Loss FedAvgAggregator": metric_result_in_current_round[1], "round": round_idx})
         else:
             mlops.log({"round_idx": round_idx})
