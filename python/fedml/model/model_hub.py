@@ -14,6 +14,7 @@ from fedml.model.cv.resnet_gn import resnet18
 from fedml.model.linear.lr import LogisticRegression
 from fedml.model.linear.lr_cifar10 import LogisticRegression_Cifar10
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow, RNN_FedShakespeare
+from fedml.model.cv.vgg import vgg11
 
 
 def create(args, output_dim):
@@ -85,6 +86,8 @@ def create(args, output_dim):
 
         create_mnn_resnet20_model(args.global_model_file_path)
         model = None  # for server MNN, the model is saved as computational graph and then send it to clients.
+    elif model_name == "VGG11":
+        model = vgg11(num_classes=output_dim)
     else:
         raise Exception("no such model definition, please check the argument spelling or customize your own model")
     return model

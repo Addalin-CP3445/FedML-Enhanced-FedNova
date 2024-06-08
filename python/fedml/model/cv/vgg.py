@@ -123,14 +123,14 @@ cfgs = {
 }
 
 
-def vgg11():
+def vgg11(num_classes = 1000):
     r"""VGG 11-layer model (configuration "A") from
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`._
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return VGG(make_layers(cfgs["A"]))
+    return VGG(make_layers(cfgs["A"]), num_classes=num_classes)
 
 
 def vgg11_bn():
