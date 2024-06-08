@@ -16,7 +16,7 @@ train_args:
   client_id_list: "[]"
   client_num_in_total: 1000
   client_num_per_round: 10
-  comm_round: 10
+  comm_round: 40
   epochs: 20
   batch_size: 10
   client_optimizer: sgd
@@ -31,7 +31,7 @@ train_args:
   nesterov: False
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 2
 
 device_args:
   worker_num: 4

@@ -1,5 +1,5 @@
 from .utils import transform_tensor_to_list
-import wandb
+# import wandb
 import torch
 
 class FedNovaTrainer(object):
@@ -99,9 +99,9 @@ class FedNovaTrainer(object):
             test_metrics["test_total"],
             test_metrics["test_loss"],
         )
-        if self.args.enable_wandb:
-            wandb.log({"Test/Acc fednovatrainer": test_tot_correct / test_num_sample})
-            wandb.log({"Test/Loss fednovatrainer": test_loss / test_num_sample})
+        # if self.args.enable_wandb:
+        #     wandb.log({"Test/Acc fednovatrainer": test_tot_correct / test_num_sample})
+        #     wandb.log({"Test/Loss fednovatrainer": test_loss / test_num_sample})
 
 
         return (
