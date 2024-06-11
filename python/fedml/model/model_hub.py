@@ -65,6 +65,8 @@ def create(args, output_dim):
         model = MobileNetV3(model_mode="LARGE")
     elif model_name == "efficientnet":
         model = EfficientNet()
+    elif model_name == "efficientnet-b0":
+        model = EfficientNet.from_name(model_name="efficientnet-b0", num_classes=output_dim)
     elif model_name == "darts" and args.dataset == "cifar10":
         if args.stage == "search":
             criterion = nn.CrossEntropyLoss()
