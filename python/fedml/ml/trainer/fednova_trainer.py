@@ -187,7 +187,8 @@ class FedNovaModelTrainer(ClientTrainer):
         grad_dict = {}
         for k in cur_params.keys():
             scale = 1.0 / opt.local_normalizing_vec
-            cum_grad = init_params[k] - cur_params[k]
+            #cum_grad = init_params[k] - cur_params[k]
+            cum_grad = (init_params[k].float() - cur_params[k].float()).float()
             cum_grad.mul_(weight * scale)
             grad_dict[k] = cum_grad
         return grad_dict

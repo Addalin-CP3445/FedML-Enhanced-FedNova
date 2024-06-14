@@ -122,10 +122,13 @@ class FedNovaAggregator(object):
         for k in norm_grads[0].keys():
             for i in range(len(norm_grads)):
                 if i == 0:
-                    cum_grad[k] = norm_grads[i][k] * tau_eff
+                    #cum_grad[k] = norm_grads[i][k] * tau_eff
+                    cum_grad[k] = norm_grads[i][k].float() * tau_eff
                 else:
-                    cum_grad[k] += norm_grads[i][k] * tau_eff
+                    #cum_grad[k] += norm_grads[i][k] * tau_eff
+                    cum_grad[k] += norm_grads[i][k].float() * tau_eff
         for k in params.keys():
+            params[k] = params[k].float()
             if self.args.gmf != 0:
                 if k not in self.global_momentum_buffer:
                     buf = self.global_momentum_buffer[k] = torch.clone(cum_grad[k]).detach()
