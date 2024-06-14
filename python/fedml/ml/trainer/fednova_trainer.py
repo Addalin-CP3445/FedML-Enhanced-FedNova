@@ -234,7 +234,14 @@ class FedNovaModelTrainer(ClientTrainer):
 
                 optimizer.step()
                 batch_loss.append(loss.item())
-            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+                
+            if batch_loss:
+                epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            else:
+                print(f"No batches processed in epoch {epoch}")
+                epoch_loss.append(0)  # Handle the case where no batches are processed
+
+            #epoch_loss.append(sum(batch_loss) / len(batch_loss))
             logging.info(
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
