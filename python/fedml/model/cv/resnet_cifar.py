@@ -110,10 +110,12 @@ class ResNet(nn.Module):
         self.inplanes = 64
         super(ResNet, self).__init__()
         # self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False) # original line
+        #self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=3, bias=False) # added line from previous commit 
         self.bn1 = norm2d(64, group_norm)
         self.relu = nn.ReLU(inplace=True)
-        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) #original line
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # added line from previous commit 
         self.layer1 = self._make_layer(block, 64, layers[0], group_norm=group_norm)
         self.layer2 = self._make_layer(
             block, 128, layers[1], stride=2, group_norm=group_norm
@@ -126,7 +128,8 @@ class ResNet(nn.Module):
         )
         # self.avgpool = nn.AvgPool2d(7, stride=1)
         # self.avgpool = nn.AvgPool2d(1)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1)) #original line
+        #self.avgpool = nn.AvgPool2d(1) # added line from previous commit 
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -172,7 +175,8 @@ class ResNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        # x = self.maxpool(x)
+        # x = self.maxpool(x) # original line
+        #x = self.maxpool(x) # added line from previous commit
 
         x = self.layer1(x)
         x = self.layer2(x)

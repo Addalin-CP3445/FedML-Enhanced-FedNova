@@ -15,6 +15,7 @@ from fedml.model.linear.lr import LogisticRegression
 from fedml.model.linear.lr_cifar10 import LogisticRegression_Cifar10
 from fedml.model.nlp.rnn import RNN_OriginalFedAvg, RNN_StackOverFlow, RNN_FedShakespeare
 from fedml.model.cv.vgg import vgg11
+from fedml.model.cv.resnet_cifar import resnet34_cifar
 
 
 def create(args, output_dim):
@@ -59,7 +60,8 @@ def create(args, output_dim):
         else:
             model = resnet56(class_num=output_dim)
     elif model_name == "resnet32":
-        model = resnet32(class_num=output_dim)
+        #model = resnet32(class_num=output_dim)
+        model = resnet34_cifar()
     elif model_name == "mobilenet":
         model = mobilenet(class_num=output_dim)
     elif model_name == "mobilenet_v3":

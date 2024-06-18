@@ -122,13 +122,13 @@ class FedNovaAggregator(object):
         for k in norm_grads[0].keys():
             for i in range(len(norm_grads)):
                 if i == 0:
-                    #cum_grad[k] = norm_grads[i][k] * tau_eff
-                    cum_grad[k] = norm_grads[i][k].float() * tau_eff
+                    cum_grad[k] = norm_grads[i][k] * tau_eff
+                    #cum_grad[k] = norm_grads[i][k].float() * tau_eff
                 else:
-                    #cum_grad[k] += norm_grads[i][k] * tau_eff
-                    cum_grad[k] += norm_grads[i][k].float() * tau_eff
+                    cum_grad[k] += norm_grads[i][k] * tau_eff
+                    #cum_grad[k] += norm_grads[i][k].float() * tau_eff
         for k in params.keys():
-            params[k] = params[k].float()
+            #params[k] = params[k].float()
             if self.args.gmf != 0:
                 if k not in self.global_momentum_buffer:
                     buf = self.global_momentum_buffer[k] = torch.clone(cum_grad[k]).detach()
@@ -136,8 +136,12 @@ class FedNovaAggregator(object):
                 else:
                     buf = self.global_momentum_buffer[k]
                     buf.mul_(self.args.gmf).add_(1 / self.args.learning_rate, cum_grad[k])
+                logging.info("params[k]: {}".format(params[k]))
+                logging.info("self.args.learning_rate: {}".format(self.args.learning_rate))
                 params[k].sub_(self.args.learning_rate, buf.to(params[k].device))
             else:
+                logging.info("params[k]: {}".format(params[k]))
+                logging.info("cum_grad[k]: {}".format(cum_grad[k]))
                 params[k].sub_(cum_grad[k].to(params[k].device))
         return params
 
@@ -154,6 +158,7 @@ class FedNovaAggregator(object):
         logging.info("len of self.result_dict[idx] = " + str(len(self.result_dict)))
 
         init_params = self.get_global_model_params()
+        logging.info("|||||||||||||||||||||||||||||||||||||||||||||||||init_params: {}".format(init_params))
         w_global = self.fednova_aggregate(init_params, grad_results, t_eff_results)
         self.set_global_model_params(w_global)
 

@@ -77,6 +77,31 @@ class Cutout(object):
         return img
 
 
+#def _data_transforms_cifar10():
+#    CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
+#    CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+#
+#    train_transform = transforms.Compose(
+#        [
+#            transforms.ToPILImage(),
+#            transforms.RandomCrop(32, padding=4),
+#            transforms.RandomHorizontalFlip(),
+#            transforms.ToTensor(),
+#            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+#        ]
+#    )
+#
+#    train_transform.transforms.append(Cutout(16))
+#
+#    valid_transform = transforms.Compose(
+#        [
+#            transforms.ToTensor(),
+#            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+#        ]
+#    )
+#
+#    return train_transform, valid_transform
+
 def _data_transforms_cifar10():
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
@@ -84,23 +109,25 @@ def _data_transforms_cifar10():
     train_transform = transforms.Compose(
         [
             transforms.ToPILImage(),
-            transforms.RandomCrop(32, padding=4),
+            transforms.Resize((224, 224)),  # Resize to 224x224
+            transforms.RandomCrop(224, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
     )
 
-    train_transform.transforms.append(Cutout(16))
-
     valid_transform = transforms.Compose(
         [
+            transforms.ToPILImage(),
+            transforms.Resize((224, 224)),  # Resize to 224x224
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
     )
 
     return train_transform, valid_transform
+
 
 
 def load_cifar10_data(datadir):
@@ -205,6 +232,9 @@ def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None):
         datadir, dataidxs=dataidxs, train=True, transform=transform_train, download=True
     )
     test_ds = dl_obj(datadir, train=False, transform=transform_test, download=True)
+    
+    logging.info("Train dataset size:" + str(len(train_ds)))
+    logging.info("Test dataset size:" + str(len(test_ds)))
 
     train_dl = data.DataLoader(
         dataset=train_ds, batch_size=train_bs, shuffle=True, drop_last=True
@@ -212,6 +242,17 @@ def get_dataloader_CIFAR10(datadir, train_bs, test_bs, dataidxs=None):
     test_dl = data.DataLoader(
         dataset=test_ds, batch_size=test_bs, shuffle=False, drop_last=True
     )
+    
+        # Check a few batches
+    for batch_idx, (x, labels) in enumerate(train_dl):
+        logging.info(f"Train Batch {batch_idx} - x shape: {x.shape}, labels shape: {labels.shape}")
+        if batch_idx >= 2:  # Print only the first few batches
+            break
+
+    for batch_idx, (x, labels) in enumerate(test_dl):
+        logging.info(f"Test Batch {batch_idx} - x shape: {x.shape}, labels shape: {labels.shape}")
+        if batch_idx >= 2:  # Print only the first few batches
+            break
 
     return train_dl, test_dl
 

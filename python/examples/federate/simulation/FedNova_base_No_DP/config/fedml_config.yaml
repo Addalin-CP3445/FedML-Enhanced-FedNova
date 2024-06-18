@@ -6,31 +6,31 @@ data_args:
   dataset: "cifar10"
   data_cache_dir: ~/.cache/fedml_data
   partition_method: "hetero"
-  partition_alpha: 0.5
+  partition_alpha: 0.2
 
 model_args:
-  model: "resnet32"
+  model: "VGG11"
 
 train_args:
   federated_optimizer: "FedNova"
   client_id_list: "[]"
-  client_num_in_total: 1000
-  client_num_per_round: 10
-  comm_round: 100
-  epochs: 50
-  batch_size: 30
+  client_num_in_total: 100 #100
+  client_num_per_round: 4 #10
+  comm_round: 100 #50
+  epochs: 2 #5
+  batch_size: 32 #32
   client_optimizer: sgd
-  learning_rate: 0.03
-  weight_decay: 0.001
-  ci: 0
-  gmf: 0
-  mu : 0
+  learning_rate: 0.02 #0.001
+  weight_decay: 0.0001 #0.0005
+#  ci: 1.0
+  gmf: 0.0
+  mu : 0.0
   momentum: 0.9
-  dampening: 0
+  dampening: 0.0
   nesterov: False
 
 validation_args:
-  frequency_of_the_test: 5
+  frequency_of_the_test: 2
 
 device_args:
   worker_num: 4

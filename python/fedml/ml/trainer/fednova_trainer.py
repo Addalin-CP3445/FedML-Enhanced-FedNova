@@ -70,6 +70,7 @@ class FedNova(Optimizer):
         self.momentum = momentum
         self.mu = mu
         self.local_normalizing_vec = 0
+        #self.local_normalizing_vec = 1e-10
         self.local_counter = 0
         self.local_steps = 0
 
@@ -121,7 +122,8 @@ class FedNova(Optimizer):
                 d_p = p.grad.data
 
                 if weight_decay != 0:
-                    d_p.add_(weight_decay, p.data)
+                    #d_p.add_(weight_decay, p.data) #original code giving deprecation error
+                    d_p.add_(p.data, alpha=weight_decay)
 
                 param_state = self.state[p]
                 if "old_init" not in param_state:
@@ -135,15 +137,18 @@ class FedNova(Optimizer):
                         buf = param_state["momentum_buffer"] = torch.clone(d_p).detach()
                     else:
                         buf = param_state["momentum_buffer"]
-                        buf.mul_(momentum).add_(1 - dampening, d_p)
+                        #buf.mul_(momentum).add_(1 - dampening, d_p) #original code giving deprecation error
+                        buf.mul_(momentum).add_(d_p, alpha=1 - dampening)
                     if nesterov:
-                        d_p = d_p.add(momentum, buf)
+                        #d_p = d_p.add(momentum, buf) #original code giving deprecation error
+                        d_p = d_p.add_(buf, alpha=momentum)
                     else:
                         d_p = buf
 
                 # apply proximal updates
                 if self.mu != 0:
-                    d_p.add_(self.mu, p.data - param_state["old_init"])
+                    #d_p.add_(self.mu, p.data - param_state["old_init"]) #original code giving deprecation error
+                    d_p.add_(p.data - param_state["old_init"], alpha=self.mu)
 
                 # update accumalated local updates
                 if "cum_grad" not in param_state:
@@ -151,9 +156,11 @@ class FedNova(Optimizer):
                     param_state["cum_grad"].mul_(local_lr)
 
                 else:
-                    param_state["cum_grad"].add_(local_lr, d_p)
+                    #param_state["cum_grad"].add_(local_lr, d_p) #original code giving deprecation error
+                    param_state["cum_grad"].add_(d_p, alpha=local_lr)
 
-                p.data.add_(-local_lr, d_p)
+                #p.data.add_(-local_lr, d_p) #original code giving deprecation error
+                p.data.add_(d_p, alpha=-local_lr)
 
         # compute local normalizing vector a_i
         if self.momentum != 0:
@@ -187,8 +194,14 @@ class FedNovaModelTrainer(ClientTrainer):
         grad_dict = {}
         for k in cur_params.keys():
             scale = 1.0 / opt.local_normalizing_vec
-            #cum_grad = init_params[k] - cur_params[k]
-            cum_grad = (init_params[k].float() - cur_params[k].float()).float()
+            logging.info("opt.local_normalizing_vec: {}".format(opt.local_normalizing_vec))
+            logging.info("init_params[k]: {}".format(init_params[k]))
+            logging.info("cur_params[k]: {}".format(cur_params[k]))
+            cum_grad = init_params[k] - cur_params[k]
+            #cum_grad = (init_params[k].float() - cur_params[k].float()).float()
+            logging.info("weight: {}".format(weight))
+            logging.info("scale: {}".format(scale))
+            logging.info("cum_grad: {}".format(cum_grad))
             cum_grad.mul_(weight * scale)
             grad_dict[k] = cum_grad
         return grad_dict

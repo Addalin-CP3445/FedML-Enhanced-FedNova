@@ -73,23 +73,54 @@ class Cutout(object):
         return img
 
 
+#def _data_transforms_cifar10():
+#    CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
+#    CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+#
+#    train_transform = transforms.Compose(
+#        [
+#            transforms.ToPILImage(),
+#            transforms.RandomCrop(32, padding=4),
+#            transforms.RandomHorizontalFlip(),
+#            transforms.ToTensor(),
+#            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+#        ]
+#    )
+#
+#    train_transform.transforms.append(Cutout(16))
+#
+#    valid_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(CIFAR_MEAN, CIFAR_STD),])
+#
+#    return train_transform, valid_transform
+
 def _data_transforms_cifar10():
-    CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
-    CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+    #CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
+    #CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+    
+    CIFAR_MEAN = [0.4914, 0.4822, 0.4465]
+    CIFAR_STD = [0.2023, 0.1994, 0.2010]
 
     train_transform = transforms.Compose(
         [
             transforms.ToPILImage(),
+            #transforms.Resize((224, 224)),  # Resize to 224x224
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
     )
-
+    
     train_transform.transforms.append(Cutout(16))
 
-    valid_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(CIFAR_MEAN, CIFAR_STD),])
+    valid_transform = transforms.Compose(
+        [
+            transforms.ToPILImage(),
+            #transforms.Resize((224, 224)),  # Resize to 224x224
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+        ]
+    )
 
     return train_transform, valid_transform
 
