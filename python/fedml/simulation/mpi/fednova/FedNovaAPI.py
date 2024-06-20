@@ -7,6 +7,7 @@ from ....core.security.fedml_defender import FedMLDefender
 from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
 from ....ml.trainer.fednova_trainer import FedNovaModelTrainer
+from ....core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 
 def FedML_FedNova_distributed(
     args, process_id, worker_number, comm, device, dataset, model, client_trainer=None, server_aggregator=None
@@ -24,6 +25,7 @@ def FedML_FedNova_distributed(
 
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
+    FedMLDifferentialPrivacy.get_instance().init(args)
 
     if process_id == 0:
         init_server(
