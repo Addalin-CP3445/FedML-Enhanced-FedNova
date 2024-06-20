@@ -54,7 +54,8 @@ tracking_args:
   
 dp_args:
   enable_dp: true
-  dp_solution_type: nbafl
-  epsilon: 0.5
-  delta: 0.1
-  C: 10
+  dp_solution_type: ldp
+  epsilon: 1.0
+  delta: 0.00001
+  noise_multiplier: 1.0
+  max_grad_norm: 1.0
