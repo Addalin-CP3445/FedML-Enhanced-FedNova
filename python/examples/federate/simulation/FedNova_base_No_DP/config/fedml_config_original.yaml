@@ -12,7 +12,7 @@ model_args:
   model: "VGG11"
 
 train_args:
-  federated_optimizer: "FedAvg"
+  federated_optimizer: "FedNova"
   client_id_list: "[]"
   client_num_in_total: 100 #100
   client_num_per_round: 4 #10
@@ -49,5 +49,5 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: fedavg_no_dp
+  wandb_project: fednova_no_dp
   using_mlops: false
