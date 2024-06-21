@@ -118,7 +118,7 @@ def init_client(
     client_index = process_id - 1
     if client_trainer is None:
         # client_trainer = create_model_trainer(model, args)
-        client_trainer = FedNovaModelTrainer(model, args)
+        client_trainer = FedNovaModelTrainer(model, args, dp=dp)
     client_trainer.set_id(client_index)
     backend = args.backend
     trainer = FedNovaTrainer(
