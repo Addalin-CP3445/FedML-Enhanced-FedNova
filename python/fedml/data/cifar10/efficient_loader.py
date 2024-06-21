@@ -140,14 +140,22 @@ class LDPDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, ldp):
         self.dataset = dataset
         self.ldp = ldp
-    
+        self.data, self.targets = self._apply_ldp()
+
+    def _apply_ldp(self):
+        perturbed_data = []
+        perturbed_targets = []
+        for img, target in self.dataset:
+            perturbed_img = self.ldp.set_ldp.add_a_noise_to_local_data([img.view(-1)])[0].view(img.size())
+            perturbed_data.append(perturbed_img)
+            perturbed_targets.append(target)
+        return torch.stack(perturbed_data), torch.tensor(perturbed_targets)
+
     def __len__(self):
         return len(self.dataset)
     
     def __getitem__(self, idx):
-        image, label = self.dataset[idx]
-        perturbed_image = self.ldp.set_ldp.add_a_noise_to_local_data([image.view(-1)])[0].view(image.size())
-        return perturbed_image, label
+        return self.data[idx], self.targets[idx]
 
 
 def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, resize=32, augmentation=True, data_efficient_load=False):
