@@ -131,7 +131,6 @@ def init_client(
         device,
         args,
         client_trainer,
-        dp=dp,
     )
     client_manager = FedNovaClientManager(args, trainer, comm, process_id, size, backend)
     client_manager.run()
