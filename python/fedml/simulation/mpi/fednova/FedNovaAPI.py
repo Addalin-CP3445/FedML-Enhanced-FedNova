@@ -57,7 +57,7 @@ def FedML_FedNova_distributed(
             train_data_local_dict,
             test_data_local_dict,
             client_trainer,
-            dp=dp,
+            dp
         )
 
 
