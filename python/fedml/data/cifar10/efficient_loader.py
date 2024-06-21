@@ -176,10 +176,10 @@ def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_dat
     X_test, y_test = cifar10_test_ds.data, cifar10_test_ds.targets
 
     # Apply LDP to training and testing datasets
-    ldp_train_ds = LDPDataset(cifar10_train_ds, ldp)
-    ldp_test_ds = LDPDataset(cifar10_test_ds, ldp)
+    # ldp_train_ds = LDPDataset(cifar10_train_ds, ldp)
+    # ldp_test_ds = LDPDataset(cifar10_test_ds, ldp)
 
-    return (X_train, y_train, X_test, y_test, ldp_train_ds, ldp_test_ds)
+    return (X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds)
 
 
 def partition_data(dataset, datadir, partition, n_nets, alpha, process_id, synthetic_data_url, private_local_data):

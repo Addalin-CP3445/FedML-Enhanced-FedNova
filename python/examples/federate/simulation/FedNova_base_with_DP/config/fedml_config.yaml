@@ -52,12 +52,12 @@ tracking_args:
   wandb_project: fednova_with_dp
   using_mlops: false
   
-# dp_args:
-#   enable_dp: true
-#   dp_solution_type: ldp
-#   epsilon: 1.0
-#   delta: 0.00001
-#   noise_multiplier: 1.0
-#   max_grad_norm: 1.0
-#   mechanism_type: gaussian
-#   sensitivity: 1
+dp_args:
+  enable_dp: true
+  dp_solution_type: ldp
+  epsilon: 1.0
+  delta: 0.00001
+  noise_multiplier: 1.0
+  max_grad_norm: 1.0
+  mechanism_type: gaussian
+  sensitivity: 1
