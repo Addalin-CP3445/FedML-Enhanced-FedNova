@@ -25,8 +25,8 @@ def FedML_FedNova_distributed(
 
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
-    dp = FedMLDifferentialPrivacy.get_instance()
-    dp.init(args)
+    # dp = FedMLDifferentialPrivacy.get_instance()
+    # dp.init(args)
 
     if process_id == 0:
         init_server(
@@ -57,7 +57,6 @@ def FedML_FedNova_distributed(
             train_data_local_dict,
             test_data_local_dict,
             client_trainer,
-            dp,
         )
 
 
@@ -132,5 +131,5 @@ def init_client(
         args,
         client_trainer,
     )
-    client_manager = FedNovaClientManager(args, trainer, comm, process_id, size, backend, dp=dp)
+    client_manager = FedNovaClientManager(args, trainer, comm, process_id, size, backend)
     client_manager.run()

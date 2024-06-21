@@ -17,14 +17,12 @@ class FedNovaClientManager(FedMLCommManager):
         rank=0,
         size=0,
         backend="MPI",
-        dp=None,
     ):
         super().__init__(args, comm, rank, size, backend)
         self.trainer = trainer
         self.num_rounds = args.comm_round
         self.round_idx = 0
         self.worker_id = self.rank - 1
-        self.dp = dp
 
     def run(self):
         super().run()
@@ -112,8 +110,8 @@ class FedNovaClientManager(FedMLCommManager):
             # if self.args.enable_wandb:
             #     wandb.log({"Train/Loss_client": loss, "round": self.round_idx})
 
-            if self.dp is not None:
-                grad = self.dp.add_local_noise(grad)
+            # if self.dp is not None:
+            #     grad = self.dp.add_local_noise(grad)
 
             self.add_client_model(local_agg_model_params, client_index, grad, t_eff,
                                 weight=average_weight_dict[client_index])

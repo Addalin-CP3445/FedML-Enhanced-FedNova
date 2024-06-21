@@ -7,7 +7,18 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10
 
 from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
+from ...core.dp.frames.ldp import LocalDP
 
+# Define the arguments for LocalDP
+class Args:
+    def __init__(self):
+        self.mechanism_type = "gaussian"  # or "laplace"
+        self.epsilon = 0.5
+        self.delta = 0.01
+        self.sensitivity = 1
+
+args = Args()
+ldp = LocalDP(args)
 
 # generate the non-IID distribution for all methods
 def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",):
@@ -124,6 +135,20 @@ def _data_transforms_cifar10():
 
     return train_transform, valid_transform
 
+# Apply LDP to the dataset
+class LDPDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, ldp):
+        self.dataset = dataset
+        self.ldp = ldp
+    
+    def __len__(self):
+        return len(self.dataset)
+    
+    def __getitem__(self, idx):
+        image, label = self.dataset[idx]
+        perturbed_image = self.ldp.set_ldp.add_a_noise_to_local_data([image.view(-1)])[0].view(image.size())
+        return perturbed_image, label
+
 
 def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, resize=32, augmentation=True, data_efficient_load=False):
     train_transform, test_transform = _data_transforms_cifar10()
@@ -140,7 +165,11 @@ def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_dat
     X_train, y_train = cifar10_train_ds.data, cifar10_train_ds.targets
     X_test, y_test = cifar10_test_ds.data, cifar10_test_ds.targets
 
-    return (X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds)
+    # Apply LDP to training and testing datasets
+    ldp_train_ds = LDPDataset(cifar10_train_ds, ldp)
+    ldp_test_ds = LDPDataset(cifar10_test_ds, ldp)
+
+    return (X_train, y_train, X_test, y_test, ldp_train_ds, ldp_test_ds)
 
 
 def partition_data(dataset, datadir, partition, n_nets, alpha, process_id, synthetic_data_url, private_local_data):
