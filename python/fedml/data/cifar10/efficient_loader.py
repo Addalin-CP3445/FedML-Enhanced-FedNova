@@ -5,6 +5,7 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10
+from collections import OrderedDict
 
 from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
 from ...core.dp.frames.ldp import LocalDP
@@ -135,7 +136,6 @@ def _data_transforms_cifar10():
 
     return train_transform, valid_transform
 
-# Apply LDP to the dataset
 class LDPDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, ldp):
         self.dataset = dataset
@@ -146,7 +146,9 @@ class LDPDataset(torch.utils.data.Dataset):
         perturbed_data = []
         perturbed_targets = []
         for img, target in self.dataset:
-            perturbed_img = self.ldp.set_ldp.add_a_noise_to_local_data([img.view(-1)])[0].view(img.size())
+            img_tensor = img.view(-1).unsqueeze(0)
+            perturbed_img_tensor = self.ldp.add_local_noise(OrderedDict([('img', img_tensor)]))['img']
+            perturbed_img = perturbed_img_tensor.view(img.size())
             perturbed_data.append(perturbed_img)
             perturbed_targets.append(target)
         return torch.stack(perturbed_data), torch.tensor(perturbed_targets)
