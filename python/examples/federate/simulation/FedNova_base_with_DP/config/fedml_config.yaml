@@ -59,3 +59,4 @@ dp_args:
   delta: 0.00001
   noise_multiplier: 1.0
   max_grad_norm: 1.0
+  mechanism_type: gaussian
