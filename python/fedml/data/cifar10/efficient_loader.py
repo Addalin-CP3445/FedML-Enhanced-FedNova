@@ -8,7 +8,7 @@ from torchvision.datasets import CIFAR10
 from collections import OrderedDict
 
 from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
-from ...core.dp.frames.ldp import LocalDP
+# from ...core.dp.frames.ldp import LocalDP
 
 # Define the arguments for LocalDP
 class Args:
@@ -19,7 +19,7 @@ class Args:
         self.sensitivity = 1
 
 args = Args()
-ldp = LocalDP(args)
+# ldp = LocalDP(args)
 
 # generate the non-IID distribution for all methods
 def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",):
@@ -136,28 +136,28 @@ def _data_transforms_cifar10():
 
     return train_transform, valid_transform
 
-class LDPDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset, ldp):
-        self.dataset = dataset
-        self.ldp = ldp
-        self.data, self.targets = self._apply_ldp()
+# class LDPDataset(torch.utils.data.Dataset):
+#     def __init__(self, dataset, ldp):
+#         self.dataset = dataset
+#         self.ldp = ldp
+#         self.data, self.targets = self._apply_ldp()
 
-    def _apply_ldp(self):
-        perturbed_data = []
-        perturbed_targets = []
-        for img, target in self.dataset:
-            img_tensor = img.view(-1).unsqueeze(0)
-            perturbed_img_tensor = self.ldp.add_local_noise(OrderedDict([('img', img_tensor)]))['img']
-            perturbed_img = perturbed_img_tensor.view(img.size())
-            perturbed_data.append(perturbed_img)
-            perturbed_targets.append(target)
-        return torch.stack(perturbed_data), torch.tensor(perturbed_targets)
+#     def _apply_ldp(self):
+#         perturbed_data = []
+#         perturbed_targets = []
+#         for img, target in self.dataset:
+#             img_tensor = img.view(-1).unsqueeze(0)
+#             perturbed_img_tensor = self.ldp.add_local_noise(OrderedDict([('img', img_tensor)]))['img']
+#             perturbed_img = perturbed_img_tensor.view(img.size())
+#             perturbed_data.append(perturbed_img)
+#             perturbed_targets.append(target)
+#         return torch.stack(perturbed_data), torch.tensor(perturbed_targets)
 
-    def __len__(self):
-        return len(self.dataset)
+#     def __len__(self):
+#         return len(self.dataset)
     
-    def __getitem__(self, idx):
-        return self.data[idx], self.targets[idx]
+#     def __getitem__(self, idx):
+#         return self.data[idx], self.targets[idx]
 
 
 def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, resize=32, augmentation=True, data_efficient_load=False):
