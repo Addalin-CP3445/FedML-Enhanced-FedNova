@@ -6,7 +6,7 @@ data_args:
   dataset: "cifar10"
   data_cache_dir: ~/.cache/fedml_data
   partition_method: "hetero"
-  partition_alpha: 0.2
+  partition_alpha: 0.5
 
 model_args:
   model: "VGG11"
@@ -14,20 +14,19 @@ model_args:
 train_args:
   federated_optimizer: "FedAvg"
   client_id_list: "[]"
-  client_num_in_total: 100 #100
-  client_num_per_round: 4 #10
-  comm_round: 100 #50
-  epochs: 2 #5
-  batch_size: 32 #32
-  client_optimizer: sgd
-  learning_rate: 0.02 #0.001
-  weight_decay: 0.0001 #0.0005
-#  ci: 1.0
+  client_num_in_total: 8
+  client_num_per_round: 4  #from 4 to 6
+  comm_round: 100 
+  epochs: 1 #reduced to 2 from 10
+  batch_size: 32
+  client_optimizer: adam
+  learning_rate: 0.00106727 
+  weight_decay: 0.000001
   gmf: 0.0
-  mu : 0.0
-  momentum: 0.9
+  mu : 0.0 #added now
+  momentum: 0.9 #added now
   dampening: 0.0
-  nesterov: False
+  nesterov: True
 
 validation_args:
   frequency_of_the_test: 2
