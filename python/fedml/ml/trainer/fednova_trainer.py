@@ -251,7 +251,7 @@ class FedNovaModelTrainer(ClientTrainer):
                 # Uncommet this following line to avoid nan loss
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
-                if self.dp is not None:
+                if self.dp:
                     local_grad = OrderedDict((name, param.grad) for name, param in model.named_parameters() if param.grad is not None)
                     noisy_grad = self.dp.add_local_noise(local_grad)
                     for name, param in model.named_parameters():
