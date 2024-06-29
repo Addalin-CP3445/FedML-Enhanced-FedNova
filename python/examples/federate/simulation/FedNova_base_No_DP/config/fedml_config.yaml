@@ -50,3 +50,6 @@ tracking_args:
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: fednova_no_dp
   using_mlops: false
+
+dp_args:
+  enable_dp: false
