@@ -67,7 +67,7 @@ dp_args:
   dp_solution_type: ldp
   epsilon: 1.0
   delta: 0.0001
-  noise_multiplier: 0.5
-  max_grad_norm: 5.0
+  noise_multiplier: 0.3
+  max_grad_norm: 15.0
   mechanism_type: gaussian
-  sensitivity: 1
+  sensitivity: 0.5
