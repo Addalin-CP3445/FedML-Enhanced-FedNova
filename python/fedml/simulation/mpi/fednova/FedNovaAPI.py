@@ -26,7 +26,10 @@ def FedML_FedNova_distributed(
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
     dp = FedMLDifferentialPrivacy.get_instance()
-    dp.init(args)
+    if args.enable_dp == True:
+        dp.init(args)
+    else:
+        dp = None
 
     if process_id == 0:
         init_server(
