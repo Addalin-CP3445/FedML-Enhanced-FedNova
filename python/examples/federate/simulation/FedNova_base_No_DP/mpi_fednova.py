@@ -9,7 +9,7 @@ if __name__ == "__main__":
     args = fedml.init()
 
     # init device
-    # device = fedml.device.get_device(args)
+    device = fedml.device.get_device(args)
 
     # load data
     dataset, output_dim = fedml.data.load(args)
@@ -18,5 +18,5 @@ if __name__ == "__main__":
     model = fedml.model.create(args, output_dim)
 
     # start training
-    fedml_runner = FedMLRunner(args, None, dataset, model)
+    fedml_runner = FedMLRunner(args, device, dataset, model)
     fedml_runner.run()
