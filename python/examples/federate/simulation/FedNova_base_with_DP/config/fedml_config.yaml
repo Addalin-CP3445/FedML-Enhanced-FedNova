@@ -69,5 +69,5 @@ dp_args:
   delta: 0.0001
   noise_multiplier: 0.3
   max_grad_norm: 15.0
-  mechanism_type: gaussian
+  mechanism_type: laplace
   sensitivity: 0.5

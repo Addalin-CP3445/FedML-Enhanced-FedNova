@@ -13,6 +13,7 @@ from .Landmarks.data_loader import load_partition_data_landmarks
 from .MNIST.data_loader import load_partition_data_mnist, download_mnist
 from .cifar10.data_loader import load_partition_data_cifar10
 from .cifar10.efficient_loader import efficient_load_partition_data_cifar10
+from .cifar10.efficient_loader import LaplaceNoiseConfig
 from .cifar100.data_loader import load_partition_data_cifar100
 from .cinic10.data_loader import load_partition_data_cinic10
 from .edge_case_examples.data_loader import load_poisoned_dataset
@@ -526,6 +527,10 @@ def load_synthetic_data(args):
             data_loader = load_partition_data_cinic10
         else:
             data_loader = load_partition_data_cifar10
+        
+        if args.enable_dp and args.dp_solution_type == "ldp":
+            LaplaceNoiseConfig.__init__(enable=True, epsilon=args.epsilon, delta=args.delta, noise_multiplier=args.noise_multiplier, max_grad_norm=args.max_grad_norm, sensitivity=args.sensitivity)
+
         (
             train_data_num,
             test_data_num,
@@ -536,12 +541,12 @@ def load_synthetic_data(args):
             test_data_local_dict,
             class_num,
         ) = data_loader(
-            args.dataset,
-            args.data_cache_dir,
-            args.partition_method,
-            args.partition_alpha,
-            args.client_num_in_total,
-            args.batch_size,
+        args.dataset,
+        args.data_cache_dir,
+        args.partition_method,
+        args.partition_alpha,
+        args.client_num_in_total,
+        args.batch_size,
         )
 
     if centralized:
