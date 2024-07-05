@@ -398,6 +398,7 @@ def efficient_load_partition_data_cifar10(
     private_local_data="",
     n_proc_in_silo=0,
     data_efficient_load=True,
+    noise_config=None, 
 ):
     (
         X_train,
@@ -408,7 +409,7 @@ def efficient_load_partition_data_cifar10(
         traindata_cls_counts,
         cifar10_train_ds,
         cifar10_test_ds,
-    ) = partition_data(dataset, data_dir, partition_method, client_number, partition_alpha, process_id, synthetic_data_url, private_local_data)
+    ) = partition_data(dataset, data_dir, partition_method, client_number, partition_alpha, process_id, synthetic_data_url, private_local_data, noise_config)
     class_num = len(np.unique(y_train))
     logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
