@@ -529,7 +529,7 @@ def load_synthetic_data(args):
             data_loader = load_partition_data_cifar10
         
         if args.enable_dp and args.dp_solution_type == "ldp":
-            LaplaceNoiseConfig.__init__(enable=True, epsilon=args.epsilon, delta=args.delta, noise_multiplier=args.noise_multiplier, max_grad_norm=args.max_grad_norm, sensitivity=args.sensitivity)
+            LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, delta=args.delta, noise_multiplier=args.noise_multiplier, max_grad_norm=args.max_grad_norm, sensitivity=args.sensitivity)
 
         (
             train_data_num,
