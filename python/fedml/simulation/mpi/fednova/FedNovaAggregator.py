@@ -140,8 +140,6 @@ class FedNovaAggregator(object):
                 logging.info("self.args.learning_rate: {}".format(self.args.learning_rate))
                 params[k].sub_(self.args.learning_rate, buf.to(params[k].device))
             else:
-                logging.info("params[k]: {}".format(params[k]))
-                logging.info("cum_grad[k]: {}".format(cum_grad[k]))
                 params[k].sub_(cum_grad[k].to(params[k].device))
         return params
 
@@ -202,5 +200,5 @@ class FedNovaAggregator(object):
 
             logging.info("@@@@@@@@@@@@@@@@@@@metrics for wandb: {}".format(metrics))
             if self.args.enable_wandb:
-                wandb.log({"Test/Acc Fednovaaggregator": metrics[0], "round": round_idx})
-                wandb.log({"Test/Loss Fednovaaggregator": metrics[1], "round": round_idx})
+                wandb.log({"Test/Acc": metrics[0], "round": round_idx})
+                wandb.log({"Test/Loss": metrics[1], "round": round_idx})

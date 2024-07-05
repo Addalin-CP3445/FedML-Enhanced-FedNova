@@ -34,7 +34,7 @@ def create_non_iid_partitions(dataset, num_clients, num_classes=10):
     return client_data_indices
 
 # Create Data Loaders for Training and Testing
-def create_data_loaders(client_indices, dataset, batch_size=32, test_split=0.2):
+def create_data_loaders(client_indices, dataset, batch_size=32, test_split=0.2, num_workers=4):
     train_loaders = []
     test_loaders = []
 
@@ -46,8 +46,8 @@ def create_data_loaders(client_indices, dataset, batch_size=32, test_split=0.2):
         train_subset = Subset(dataset, train_indices)
         test_subset = Subset(dataset, test_indices)
 
-        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_subset, batch_size=batch_size, shuffle=False)
+        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+        test_loader = DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
         train_loaders.append(train_loader)
         test_loaders.append(test_loader)
@@ -98,7 +98,7 @@ def train(model, device, train_loader, criterion, local_epochs, config):
     return len(train_loader.dataset) // train_loader.batch_size
 
 # Training with Ray Tune
-def federated_training(config, num_clients=16, batch_size=32, communication_rounds=5, local_epochs=1):
+def federated_training(config, num_clients=4, batch_size=32, communication_rounds=5, local_epochs=1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load and Partition CIFAR-10 Dataset
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         config=config,
         num_samples=10,
         scheduler=scheduler,
-        resources_per_trial={"cpu": 5, "gpu": 1}
+        resources_per_trial={"cpu": 8, "gpu": 2}
     )
 
     print("Best hyperparameters found were: ", analysis.best_config)

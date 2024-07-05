@@ -1,0 +1,5 @@
+# gpu_mapping.yaml
+
+# Configuration for a single machine with 1 GPU and using CPU
+mapping_local:
+    wkstn: [1, 1, 1, 1, 1, 1, 1, 1]

@@ -172,7 +172,7 @@ class FedAVGAggregator(object):
                 metric_result_in_current_round = self.aggregator.test(self.val_global, self.device, self.args)
             logging.info("metric_result_in_current_round = {}".format(metric_result_in_current_round))
             if self.args.enable_wandb:
-                wandb.log({"Test/Acc FedAvgAggregator": metric_result_in_current_round[0], "round": round_idx})
-                wandb.log({"Test/Loss FedAvgAggregator": metric_result_in_current_round[1], "round": round_idx})
+                wandb.log({"Test/Acc": metric_result_in_current_round[0], "round": round_idx})
+                wandb.log({"Test/Loss": metric_result_in_current_round[1], "round": round_idx})
         else:
             mlops.log({"round_idx": round_idx})
