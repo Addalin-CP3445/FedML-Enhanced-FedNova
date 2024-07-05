@@ -6,20 +6,9 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10
 from collections import OrderedDict
+from PIL import Image
 
 from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
-# from ...core.dp.frames.ldp import LocalDP
-
-# Define the arguments for LocalDP
-class Args:
-    def __init__(self):
-        self.mechanism_type = "gaussian"  # or "laplace"
-        self.epsilon = 0.5
-        self.delta = 0.01
-        self.sensitivity = 1
-
-args = Args()
-# ldp = LocalDP(args)
 
 # generate the non-IID distribution for all methods
 def read_data_distribution(filename="./data_preprocessing/non-iid-distribution/CIFAR10/distribution.txt",):
@@ -84,80 +73,103 @@ class Cutout(object):
         img *= mask
         return img
 
+class LaplaceNoiseConfig:
+    def __init__(self, enable=False, epsilon=0.1, delta=0.01, noise_multiplier=1.0, max_grad_norm=1.0, sensitivity=1.0):
+        self.enable = enable
+        self.epsilon = epsilon
+        self.delta = delta
+        self.noise_multiplier = noise_multiplier
+        self.max_grad_norm = max_grad_norm
+        self.sensitivity = sensitivity
 
-#def _data_transforms_cifar10():
-#    CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
-#    CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
-#
-#    train_transform = transforms.Compose(
-#        [
-#            transforms.ToPILImage(),
-#            transforms.RandomCrop(32, padding=4),
-#            transforms.RandomHorizontalFlip(),
-#            transforms.ToTensor(),
-#            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-#        ]
-#    )
-#
-#    train_transform.transforms.append(Cutout(16))
-#
-#    valid_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(CIFAR_MEAN, CIFAR_STD),])
-#
-#    return train_transform, valid_transform
+
+
+def add_laplace_noise(image, epsilon, delta, noise_multiplier, max_grad_norm, sensitivity):
+    """
+    Adds Laplace noise to an image for local differential privacy.
+    
+    :param image: Input image (numpy array).
+    :param epsilon: Privacy parameter epsilon.
+    :param delta: Privacy parameter delta.
+    :param noise_multiplier: Multiplier for the noise scale.
+    :param max_grad_norm: Maximum gradient norm.
+    :param sensitivity: Sensitivity of the data.
+    :return: Noisy image (numpy array).
+    """
+    if image is None:
+        raise ValueError("Image not loaded correctly. Please check the file path and image format.")
+    
+    # Calculate the scale for the Laplace noise
+    scale = sensitivity / epsilon
+
+    # Adjust the scale based on noise multiplier and max_grad_norm
+    scale *= noise_multiplier * max_grad_norm
+
+    # Generate Laplace noise
+    noise = np.random.laplace(0, scale, image.shape)
+
+    # Add noise to the image
+    noisy_image = image + noise
+
+    # Clip values to be in the valid range [0, 255]
+    noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+
+    return noisy_image
+
+
+class AddLaplaceNoise(object):
+    def __init__(self, epsilon, delta, noise_multiplier, max_grad_norm, sensitivity):
+        self.epsilon = epsilon
+        self.delta = delta
+        self.noise_multiplier = noise_multiplier
+        self.max_grad_norm = max_grad_norm
+        self.sensitivity = sensitivity
+
+    def __call__(self, img):
+        img = np.array(img)
+        noisy_img = add_laplace_noise(img, self.epsilon, self.delta, self.noise_multiplier, self.max_grad_norm, self.sensitivity)
+        return Image.fromarray(noisy_img)  # Convert back to PIL Image
 
 def _data_transforms_cifar10():
-    #CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
-    #CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
+    CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
+    CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
     
-    CIFAR_MEAN = [0.4914, 0.4822, 0.4465]
-    CIFAR_STD = [0.2023, 0.1994, 0.2010]
+    # CIFAR_MEAN = [0.4914, 0.4822, 0.4465]
+    # CIFAR_STD = [0.2023, 0.1994, 0.2010]
 
     train_transform = transforms.Compose(
+            [
+                transforms.ToPILImage(),
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+            ]
+        )
+
+    if LaplaceNoiseConfig.enable:
+        train_transform = transforms.Compose(
         [
             transforms.ToPILImage(),
-            #transforms.Resize((224, 224)),  # Resize to 224x224
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
+            AddLaplaceNoise(epsilon=LaplaceNoiseConfig.epsilon, delta=LaplaceNoiseConfig.delta, noise_multiplier=LaplaceNoiseConfig.noise_multiplier, max_grad_norm=LaplaceNoiseConfig.max_grad_norm, sensitivity=LaplaceNoiseConfig.sensitivity),  # Add Laplace noise
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
-    )
-    
+        )
+
     train_transform.transforms.append(Cutout(16))
 
     valid_transform = transforms.Compose(
         [
             transforms.ToPILImage(),
-            #transforms.Resize((224, 224)),  # Resize to 224x224
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
     )
 
     return train_transform, valid_transform
-
-# class LDPDataset(torch.utils.data.Dataset):
-#     def __init__(self, dataset, ldp):
-#         self.dataset = dataset
-#         self.ldp = ldp
-#         self.data, self.targets = self._apply_ldp()
-
-#     def _apply_ldp(self):
-#         perturbed_data = []
-#         perturbed_targets = []
-#         for img, target in self.dataset:
-#             img_tensor = img.view(-1).unsqueeze(0)
-#             perturbed_img_tensor = self.ldp.add_local_noise(OrderedDict([('img', img_tensor)]))['img']
-#             perturbed_img = perturbed_img_tensor.view(img.size())
-#             perturbed_data.append(perturbed_img)
-#             perturbed_targets.append(target)
-#         return torch.stack(perturbed_data), torch.tensor(perturbed_targets)
-
-#     def __len__(self):
-#         return len(self.dataset)
-    
-#     def __getitem__(self, idx):
-#         return self.data[idx], self.targets[idx]
 
 
 def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, resize=32, augmentation=True, data_efficient_load=False):
@@ -174,10 +186,6 @@ def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_dat
 
     X_train, y_train = cifar10_train_ds.data, cifar10_train_ds.targets
     X_test, y_test = cifar10_test_ds.data, cifar10_test_ds.targets
-
-    # Apply LDP to training and testing datasets
-    # ldp_train_ds = LDPDataset(cifar10_train_ds, ldp)
-    # ldp_test_ds = LDPDataset(cifar10_test_ds, ldp)
 
     return (X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds)
 

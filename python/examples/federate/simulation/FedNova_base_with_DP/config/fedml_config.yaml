@@ -60,6 +60,10 @@ dp_args:
   epsilon: 1.0
   delta: 0.0001
   noise_multiplier: 0.3
+<<<<<<< HEAD
   max_grad_norm: 5.0
+=======
+  max_grad_norm: 15.0
+>>>>>>> 70a0b4530eef7219a8992cf3ec140e503bbb35ed
   mechanism_type: laplace
   sensitivity: 0.5
