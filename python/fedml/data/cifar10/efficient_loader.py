@@ -130,33 +130,36 @@ class AddLaplaceNoise(object):
         noisy_img = add_laplace_noise(img, self.epsilon, self.delta, self.noise_multiplier, self.max_grad_norm, self.sensitivity)
         return Image.fromarray(noisy_img)  # Convert back to PIL Image
 
-def _data_transforms_cifar10():
+def _data_transforms_cifar10(noise_config=None):
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
-    
-    # CIFAR_MEAN = [0.4914, 0.4822, 0.4465]
-    # CIFAR_STD = [0.2023, 0.1994, 0.2010]
 
     train_transform = transforms.Compose(
-            [
-                transforms.ToPILImage(),
-                transforms.RandomCrop(32, padding=4),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-            ]
-        )
-
-    if LaplaceNoiseConfig.enable:
-        train_transform = transforms.Compose(
         [
             transforms.ToPILImage(),
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
-            AddLaplaceNoise(epsilon=LaplaceNoiseConfig.epsilon, delta=LaplaceNoiseConfig.delta, noise_multiplier=LaplaceNoiseConfig.noise_multiplier, max_grad_norm=LaplaceNoiseConfig.max_grad_norm, sensitivity=LaplaceNoiseConfig.sensitivity),  # Add Laplace noise
             transforms.ToTensor(),
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
+    )
+
+    if noise_config and noise_config.enable:
+        train_transform = transforms.Compose(
+            [
+                transforms.ToPILImage(),
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                AddLaplaceNoise(
+                    epsilon=noise_config.epsilon, 
+                    delta=noise_config.delta, 
+                    noise_multiplier=noise_config.noise_multiplier, 
+                    max_grad_norm=noise_config.max_grad_norm, 
+                    sensitivity=noise_config.sensitivity
+                ),  # Add Laplace noise
+                transforms.ToTensor(),
+                transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+            ]
         )
 
     train_transform.transforms.append(Cutout(16))
@@ -172,8 +175,8 @@ def _data_transforms_cifar10():
     return train_transform, valid_transform
 
 
-def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, resize=32, augmentation=True, data_efficient_load=False):
-    train_transform, test_transform = _data_transforms_cifar10()
+def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data,noise_config = None, resize=32, augmentation=True, data_efficient_load=False):
+    train_transform, test_transform = _data_transforms_cifar10(noise_config)
 
     is_download = True;
 
@@ -190,10 +193,10 @@ def load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_dat
     return (X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds)
 
 
-def partition_data(dataset, datadir, partition, n_nets, alpha, process_id, synthetic_data_url, private_local_data):
+def partition_data(dataset, datadir, partition, n_nets, alpha, process_id, synthetic_data_url, private_local_data, noise_config = None):
     np.random.seed(10)
     logging.info("*********partition data***************")
-    X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds = load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data)
+    X_train, y_train, X_test, y_test, cifar10_train_ds, cifar10_test_ds = load_cifar10_data(datadir, process_id, synthetic_data_url, private_local_data, noise_config)
     n_train = X_train.shape[0]
     # n_test = X_test.shape[0]
 

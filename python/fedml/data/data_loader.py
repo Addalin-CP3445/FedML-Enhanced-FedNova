@@ -248,6 +248,11 @@ def combine_batches(batches):
 def load_synthetic_data(args):
     if args.training_type == "cross_silo" and args.dataset == "cifar10" and hasattr(args, 'synthetic_data_url') and args.synthetic_data_url.find("https") != -1:
         data_server_preprocess(args)
+
+    noise_config = None
+    if args.enable_dp and args.dp_solution_type == "ldp":
+        noise_config = LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, delta=args.delta, noise_multiplier=args.noise_multiplier, max_grad_norm=args.max_grad_norm, sensitivity=args.sensitivity)    
+
     dataset_name = args.dataset
     # check if the centralized training is enabled
     centralized = True if (args.client_num_in_total == 1 and args.training_type != "cross_silo") else False
@@ -528,9 +533,6 @@ def load_synthetic_data(args):
         else:
             data_loader = load_partition_data_cifar10
         
-        if args.enable_dp and args.dp_solution_type == "ldp":
-            LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, delta=args.delta, noise_multiplier=args.noise_multiplier, max_grad_norm=args.max_grad_norm, sensitivity=args.sensitivity)
-
         (
             train_data_num,
             test_data_num,
@@ -547,6 +549,7 @@ def load_synthetic_data(args):
         args.partition_alpha,
         args.client_num_in_total,
         args.batch_size,
+        noise_config=noise_config,
         )
 
     if centralized:
