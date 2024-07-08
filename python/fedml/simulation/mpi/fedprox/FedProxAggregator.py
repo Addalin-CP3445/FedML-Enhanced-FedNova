@@ -162,8 +162,6 @@ class FedProxAggregator(object):
                 metrics[0],
                 metrics[1],
             )
-            test_acc.append(copy.deepcopy(test_acc))
-            test_losses.append(copy.deepcopy(test_loss))
 
             # test on test dataset
             wandb.log({"Test/Acc": test_acc, "round": round_idx})
