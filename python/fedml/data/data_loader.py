@@ -250,7 +250,7 @@ def load_synthetic_data(args):
         data_server_preprocess(args)
 
     noise_config = None
-    if args.enable_dp and args.dp_solution_type == "ldp":
+    if args.enable_dp_ldp and args.mechanism_type == "laplace":
         noise_config = LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, sensitivity=args.sensitivity)    
 
     dataset_name = args.dataset

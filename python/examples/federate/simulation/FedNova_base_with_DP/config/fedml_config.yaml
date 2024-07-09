@@ -55,8 +55,7 @@ tracking_args:
   using_mlops: false
 
 dp_args:
-  enable_dp: true
-  dp_solution_type: ldp
+  enable_dp_ldp: true
   epsilon: 1.0
   mechanism_type: laplace
   sensitivity: 25.0
