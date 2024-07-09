@@ -251,7 +251,7 @@ def load_synthetic_data(args):
 
     noise_config = None
     if args.enable_dp and args.dp_solution_type == "ldp":
-        noise_config = LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, delta=args.delta, noise_multiplier=args.noise_multiplier, max_grad_norm=args.max_grad_norm, sensitivity=args.sensitivity)    
+        noise_config = LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, sensitivity=args.sensitivity)    
 
     dataset_name = args.dataset
     # check if the centralized training is enabled

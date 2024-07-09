@@ -58,9 +58,6 @@ tracking_args:
 dp_args:
   enable_dp: true
   dp_solution_type: ldp
-  epsilon: 0.5
-  delta: 0.0001
-  noise_multiplier: 2.0
-  max_grad_norm: 1.0
+  epsilon: 1.0
   mechanism_type: laplace
-  sensitivity: 5.0
+  sensitivity: 25.0

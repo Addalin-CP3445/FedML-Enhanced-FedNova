@@ -74,25 +74,19 @@ class Cutout(object):
         return img
 
 class LaplaceNoiseConfig:
-    def __init__(self, enable=False, epsilon=0.1, delta=0.01, noise_multiplier=1.0, max_grad_norm=1.0, sensitivity=1.0):
+    def __init__(self, enable=False, epsilon=0.1, sensitivity=1.0):
         self.enable = enable
         self.epsilon = epsilon
-        self.delta = delta
-        self.noise_multiplier = noise_multiplier
-        self.max_grad_norm = max_grad_norm
         self.sensitivity = sensitivity
 
 
 
-def add_laplace_noise(image, epsilon, delta, noise_multiplier, max_grad_norm, sensitivity):
+def add_laplace_noise(image, epsilon, sensitivity):
     """
     Adds Laplace noise to an image for local differential privacy.
     
     :param image: Input image (numpy array).
     :param epsilon: Privacy parameter epsilon.
-    :param delta: Privacy parameter delta.
-    :param noise_multiplier: Multiplier for the noise scale.
-    :param max_grad_norm: Maximum gradient norm.
     :param sensitivity: Sensitivity of the data.
     :return: Noisy image (numpy array).
     """
@@ -101,9 +95,6 @@ def add_laplace_noise(image, epsilon, delta, noise_multiplier, max_grad_norm, se
     
     # Calculate the scale for the Laplace noise
     scale = sensitivity / epsilon
-
-    # Adjust the scale based on noise multiplier and max_grad_norm
-    scale *= noise_multiplier * max_grad_norm
 
     # Generate Laplace noise
     noise = np.random.laplace(0, scale, image.shape)
@@ -118,16 +109,13 @@ def add_laplace_noise(image, epsilon, delta, noise_multiplier, max_grad_norm, se
 
 
 class AddLaplaceNoise(object):
-    def __init__(self, epsilon, delta, noise_multiplier, max_grad_norm, sensitivity):
+    def __init__(self, epsilon, sensitivity):
         self.epsilon = epsilon
-        self.delta = delta
-        self.noise_multiplier = noise_multiplier
-        self.max_grad_norm = max_grad_norm
         self.sensitivity = sensitivity
 
     def __call__(self, img):
         img = np.array(img)
-        noisy_img = add_laplace_noise(img, self.epsilon, self.delta, self.noise_multiplier, self.max_grad_norm, self.sensitivity)
+        noisy_img = add_laplace_noise(img, self.epsilon, self.sensitivity)
         return Image.fromarray(noisy_img)  # Convert back to PIL Image
 
 def _data_transforms_cifar10(noise_config=None):
@@ -152,9 +140,6 @@ def _data_transforms_cifar10(noise_config=None):
                 transforms.RandomHorizontalFlip(),
                 AddLaplaceNoise(
                     epsilon=noise_config.epsilon, 
-                    delta=noise_config.delta, 
-                    noise_multiplier=noise_config.noise_multiplier, 
-                    max_grad_norm=noise_config.max_grad_norm, 
                     sensitivity=noise_config.sensitivity
                 ),  # Add Laplace noise
                 transforms.ToTensor(),
