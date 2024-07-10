@@ -126,16 +126,14 @@ def _data_transforms_cifar10(noise_config=None):
         transforms.ToPILImage(),
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ]
 
     if noise_config and noise_config.enable:
         train_transform.append(AddLaplaceNoise(epsilon=noise_config.epsilon, sensitivity=noise_config.sensitivity))
 
-    train_transform.extend([
-        transforms.ToTensor(),
-        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-        Cutout(16)
-    ])
+    train_transform.append(Cutout(16))
 
     train_transform = transforms.Compose(train_transform)
 
