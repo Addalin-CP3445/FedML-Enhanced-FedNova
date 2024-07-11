@@ -114,7 +114,7 @@ class AddLaplaceNoise(object):
         self.sensitivity = sensitivity
 
     def __call__(self, img):
-        img = np.array(img)
+        img = np.array(img) / 255.0
         noisy_img = add_laplace_noise(img, self.epsilon, self.sensitivity)
         return Image.fromarray(noisy_img)  # Convert back to PIL Image
 
