@@ -114,7 +114,7 @@ class AddLaplaceNoise(object):
         self.sensitivity = sensitivity
 
     def __call__(self, img):
-        img = np.array(img) / 255.0
+        img = np.array(img)
         noisy_img = add_laplace_noise(img, self.epsilon, self.sensitivity)
         return Image.fromarray(noisy_img)  # Convert back to PIL Image
 
@@ -131,7 +131,7 @@ def _data_transforms_cifar10(noise_config=None):
     ]
 
     if noise_config and noise_config.enable:
-        train_transform.append(AddLaplaceNoise(epsilon=noise_config.epsilon, sensitivity=noise_config.sensitivity))
+        train_transform.append(transforms.Lambda(lambda img: AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity)(img)))
 
     train_transform.append(Cutout(16))
 
