@@ -80,34 +80,6 @@ class LaplaceNoiseConfig:
         self.sensitivity = sensitivity
 
 
-
-def add_laplace_noise(image, epsilon, sensitivity):
-    """
-    Adds Laplace noise to an image for local differential privacy.
-    
-    :param image: Input image (numpy array).
-    :param epsilon: Privacy parameter epsilon.
-    :param sensitivity: Sensitivity of the data.
-    :return: Noisy image (numpy array).
-    """
-    if image is None:
-        raise ValueError("Image not loaded correctly. Please check the file path and image format.")
-    
-    # Calculate the scale for the Laplace noise
-    scale = sensitivity / epsilon
-
-    # Generate Laplace noise
-    noise = np.random.laplace(0, scale, image.shape)
-
-    # Add noise to the image
-    noisy_image = image + noise
-
-    # Clip values to be in the valid range [0, 255]
-    noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
-
-    return noisy_image
-
-
 class AddLaplaceNoise(object):
     def __init__(self, epsilon, sensitivity):
         self.epsilon = epsilon
@@ -115,8 +87,21 @@ class AddLaplaceNoise(object):
 
     def __call__(self, img):
         img = np.array(img)
-        noisy_img = add_laplace_noise(img, self.epsilon, self.sensitivity)
-        return Image.fromarray(noisy_img)  # Convert back to PIL Image
+
+        scale = self.sensitivity / self.epsilon
+
+        # Generate Laplace noise
+        noise = np.random.laplace(0, scale, img.shape)
+
+        # Add noise to the image
+        noisy_image = img + noise
+
+        # Clip values to be in the valid range [0, 255]
+        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+        return Image.fromarray(noisy_image)  # Convert back to PIL Image
+    
+    def __repr__(self):
+        return self.__class__.__name__ + '(epsilon={0}, sensitivity={1})'.format(self.epsilon, self.sensitivity)
 
 def _data_transforms_cifar10(noise_config=None):
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
@@ -131,7 +116,7 @@ def _data_transforms_cifar10(noise_config=None):
     ]
 
     if noise_config and noise_config.enable:
-        train_transform.append(transforms.Lambda(lambda img: AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity)(img)))
+        train_transform.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
 
     train_transform.append(Cutout(16))
 
