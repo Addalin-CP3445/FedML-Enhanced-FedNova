@@ -381,6 +381,7 @@ def efficient_load_partition_data_cifar10(
         batch_size,
         batch_size,
         noise_config,
+        dataidxs = None,
         data_efficient_load=True,
         full_train_dataset=cifar10_train_ds,
         full_test_dataset=cifar10_test_ds,
