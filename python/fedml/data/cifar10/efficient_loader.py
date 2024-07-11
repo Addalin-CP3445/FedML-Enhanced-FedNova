@@ -209,6 +209,7 @@ def get_dataloader(
     train_bs,
     test_bs,
     dataidxs=None,
+    noise_config = None,
     data_efficient_load=False,
     full_train_dataset=None,
     full_test_dataset=None,
@@ -218,6 +219,7 @@ def get_dataloader(
         train_bs,
         test_bs,
         dataidxs,
+        noise_config,
         data_efficient_load=data_efficient_load,
         full_train_dataset=full_train_dataset,
         full_test_dataset=full_test_dataset,
@@ -234,11 +236,12 @@ def get_dataloader_CIFAR10(
     train_bs,
     test_bs,
     dataidxs=None,
+    noise_config=None,
     data_efficient_load=False,
     full_train_dataset=None,
     full_test_dataset=None,
 ):
-    transform_train, transform_test = _data_transforms_cifar10()
+    transform_train, transform_test = _data_transforms_cifar10(noise_config)
 
     if data_efficient_load:
         dl_obj = CIFAR10_truncated_WO_reload
@@ -377,6 +380,7 @@ def efficient_load_partition_data_cifar10(
         data_dir,
         batch_size,
         batch_size,
+        noise_config,
         data_efficient_load=True,
         full_train_dataset=cifar10_train_ds,
         full_test_dataset=cifar10_test_ds,
@@ -403,6 +407,7 @@ def efficient_load_partition_data_cifar10(
             batch_size,
             batch_size,
             dataidxs,
+            noise_config,
             data_efficient_load=True,
             full_train_dataset=cifar10_train_ds,
             full_test_dataset=cifar10_test_ds,
