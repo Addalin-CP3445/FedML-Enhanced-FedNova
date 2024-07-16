@@ -101,7 +101,21 @@ class AddLaplaceNoise(object):
 
         # Clip values to be in the valid range [0, 255]
         noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
-        return Image.fromarray(noisy_image)  # Convert back to PIL Image
+
+        noisy_image = np.transpose(noisy_image, (1, 2, 0))
+
+        # Debugging prints
+        # print(f"Noisy image shape: {noisy_image.shape}, dtype: {noisy_image.dtype}")
+
+        # Ensure the shape and dtype are correct
+        if len(noisy_image.shape) != 3 or noisy_image.shape[2] not in [1, 3]:
+            raise ValueError(f"Unexpected noisy image shape: {noisy_image.shape}")
+        if noisy_image.dtype != np.uint8:
+            raise TypeError(f"Unexpected noisy image dtype: {noisy_image.dtype}")
+
+        Image.fromarray(noisy_image)  # Convert back to PIL Image
+        return transforms.ToTensor()(noisy_image)
+
     
     def __repr__(self):
         return self.__class__.__name__ + '(epsilon={0}, sensitivity={1})'.format(self.epsilon, self.sensitivity)
@@ -117,6 +131,8 @@ def _data_transforms_cifar10(noise_config=None):
         transforms.ToTensor(),
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ]
+
+    train_transform.append(Cutout(16))
 
     if noise_config and noise_config.enable:
         train_transform.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
