@@ -7,6 +7,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10
 from collections import OrderedDict
 from PIL import Image
+import cv2
 
 from .without_reload import CIFAR10_truncated, CIFAR10_truncated_WO_reload
 
@@ -95,6 +96,7 @@ class AddLaplaceNoise(object):
 
         # Add noise to the image
         noisy_image = img + noise
+        noisy_image = cv2.add(img, noise)
 
         # Clip values to be in the valid range [0, 255]
         noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
