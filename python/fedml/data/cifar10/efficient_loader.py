@@ -93,6 +93,7 @@ class AddLaplaceNoise(object):
 
         # Generate Laplace noise
         noise = np.random.laplace(0, scale, img.shape)
+        noise = np.random.laplace(0, scale, img.shape).astype(np.uint8)
 
         # Add noise to the image
         noisy_image = img + noise
