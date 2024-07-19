@@ -320,6 +320,9 @@ def load_partition_data_ImageNet(
 
     if partition_method == 'hetro' and partition_alpha is not None:
         dataidxs = partition_data_dirichlet(labels, client_number, partition_alpha)
+        print("Data indices (dataidxs):")
+        for k, v in dataidxs.items():
+            print(f"Client {k}: {len(v)} samples")
     else:
         raise ValueError("Unsupported partition method or missing partition alpha")
 
@@ -356,8 +359,11 @@ def load_partition_data_ImageNet(
     test_data_local_dict = dict()
 
     for client_idx in range(client_number):
-        local_data_num = len(dataidxs[client_idx])
-        data_local_num_dict[client_idx] = local_data_num
+        if dataidxs is not None:
+            if client_idx not in dataidxs:
+                raise KeyError(f"Client index {client_idx} is not in dataidxs")
+            local_data_num = len(dataidxs[client_idx])
+            data_local_num_dict[client_idx] = local_data_num
 
         train_data_local, test_data_local = get_dataloader_ImageNet_truncated(
             train_dataset,
