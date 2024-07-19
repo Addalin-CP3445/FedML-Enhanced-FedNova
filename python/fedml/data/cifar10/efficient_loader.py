@@ -88,6 +88,9 @@ class AddLaplaceNoise(object):
     def __call__(self, img):
         img = np.array(img)
 
+        #if img.dtype != np.uint8:
+        #    img = img.astype(np.uint8)
+
         scale = self.sensitivity / self.epsilon
 
         # Generate Laplace noise
