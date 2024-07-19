@@ -34,6 +34,36 @@ class Cutout(object):
         img *= mask
         return img
 
+def partition_data_dirichlet(labels, client_number, alpha):
+    """
+    Partition data indices using Dirichlet distribution for non-iid partitioning.
+
+    :param labels: Array of labels in the dataset.
+    :param client_number: Number of clients to partition data for.
+    :param alpha: Dirichlet distribution parameter.
+    :return: A dictionary where keys are client indices and values are lists of data indices.
+    """
+    np.random.seed(42)  # for reproducibility
+
+    label_distribution = np.bincount(labels)
+    num_classes = len(label_distribution)
+    
+    # Compute the label proportions for each client
+    label_proportions = np.random.dirichlet([alpha] * client_number, num_classes)
+    client_dataidx_map = {i: [] for i in range(client_number)}
+
+    # Assign indices to each client based on the label proportions
+    for label in range(num_classes):
+        indices = np.where(labels == label)[0]
+        np.random.shuffle(indices)
+        proportions = label_proportions[label]
+        start_idx = 0
+        for client_id, proportion in enumerate(proportions):
+            num_samples = int(proportion * len(indices))
+            client_dataidx_map[client_id].extend(indices[start_idx:start_idx + num_samples])
+            start_idx += num_samples
+
+    return client_dataidx_map
 
 def _data_transforms_ImageNet():
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
@@ -280,17 +310,25 @@ def load_partition_data_ImageNet(
 ):
 
     if dataset == "ILSVRC2012":
-        train_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=True)
-
+        temp_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=True)
         test_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=False)
+        labels = [item[1] for item in temp_dataset.all_data]
     elif dataset == "ILSVRC2012_hdf5":
-        train_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)
-
+        temp_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)
         test_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=False)
+        labels = temp_dataset.all_data_hdf5.dlabel
+
+    if partition_method == 'hetro' and partition_alpha is not None:
+        dataidxs = partition_data_dirichlet(labels, client_number, partition_alpha)
+    else:
+        dataidxs = None
+
+    if dataset == "ILSVRC2012":
+        train_dataset = ImageNet(data_dir=data_dir, dataidxs=dataidxs, train=True)
+    elif dataset == "ILSVRC2012_hdf5":
+        train_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=dataidxs, train=True)
 
     net_dataidx_map = train_dataset.get_net_dataidx_map()
-
-    class_num = 1000
 
     # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     # train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
@@ -318,35 +356,18 @@ def load_partition_data_ImageNet(
     test_data_local_dict = dict()
 
     for client_idx in range(client_number):
-        if client_number == 1000:
-            dataidxs = client_idx
-            data_local_num_dict = class_num_dict
-        elif client_number == 100:
-            dataidxs = [client_idx * 10 + i for i in range(10)]
-            data_local_num_dict[client_idx] = sum(
-                class_num_dict[client_idx + i] for i in range(10)
-            )
-        else:
-            raise NotImplementedError("Not support other client_number for now!")
+        local_data_num = len(dataidxs[client_idx])
+        data_local_num_dict[client_idx] = local_data_num
 
-        local_data_num = data_local_num_dict[client_idx]
-
-        # logging.info("client_idx = %d, local_sample_number = %d" % (client_idx, local_data_num))
-
-        # training batch size = 64; algorithms batch size = 32
-        # train_data_local, test_data_local = get_dataloader(dataset, data_dir, batch_size, batch_size,
-        #                                          dataidxs)
         train_data_local, test_data_local = get_dataloader_ImageNet_truncated(
             train_dataset,
             test_dataset,
             train_bs=batch_size,
             test_bs=batch_size,
-            dataidxs=dataidxs,
+            dataidxs=dataidxs[client_idx],
             net_dataidx_map=net_dataidx_map,
         )
 
-        # logging.info("client_idx = %d, batch_num_train_local = %d, batch_num_test_local = %d" % (
-        # client_idx, len(train_data_local), len(test_data_local)))
         train_data_local_dict[client_idx] = train_data_local
         test_data_local_dict[client_idx] = test_data_local
 
