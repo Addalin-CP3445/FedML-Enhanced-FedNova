@@ -321,7 +321,7 @@ def load_partition_data_ImageNet(
     if partition_method == 'hetro' and partition_alpha is not None:
         dataidxs = partition_data_dirichlet(labels, client_number, partition_alpha)
     else:
-        dataidxs = None
+        raise ValueError("Unsupported partition method or missing partition alpha")
 
     if dataset == "ILSVRC2012":
         train_dataset = ImageNet(data_dir=data_dir, dataidxs=dataidxs, train=True)

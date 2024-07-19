@@ -392,8 +392,8 @@ def load_synthetic_data(args):
         ) = load_partition_data_ImageNet(
             dataset=dataset_name,
             data_dir=args.data_cache_dir,
-            partition_method=None,
-            partition_alpha=None,
+            partition_method=args.partition_method,
+            partition_alpha=args.partition_alpha,
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
         )
