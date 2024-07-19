@@ -324,6 +324,10 @@ def load_partition_data_ImageNet(
         temp_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)
         test_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=False)
         labels = temp_dataset.all_data_hdf5.dlabel
+        
+    # Debug: Print the labels array
+    print("Labels array:", labels)
+    print("Number of labels:", len(labels))
 
     if partition_method == 'hetro' and partition_alpha is not None:
         dataidxs = partition_data_dirichlet(labels, client_number, partition_alpha)
