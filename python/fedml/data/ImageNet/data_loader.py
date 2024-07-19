@@ -47,21 +47,28 @@ def partition_data_dirichlet(labels, client_number, alpha):
 
     label_distribution = np.bincount(labels)
     num_classes = len(label_distribution)
-    
+
     # Compute the label proportions for each client
     label_proportions = np.random.dirichlet([alpha] * client_number, num_classes)
     client_dataidx_map = {i: [] for i in range(client_number)}
+
+    print("Label distribution:", label_distribution)
+    print("Label proportions:", label_proportions)
 
     # Assign indices to each client based on the label proportions
     for label in range(num_classes):
         indices = np.where(labels == label)[0]
         np.random.shuffle(indices)
         proportions = label_proportions[label]
+        print(f"Label {label}, indices count: {len(indices)}, proportions: {proportions}")
         start_idx = 0
         for client_id, proportion in enumerate(proportions):
             num_samples = int(proportion * len(indices))
             client_dataidx_map[client_id].extend(indices[start_idx:start_idx + num_samples])
             start_idx += num_samples
+
+    for client_id, indices in client_dataidx_map.items():
+        print(f"Client {client_id}: {len(indices)} samples")
 
     return client_dataidx_map
 
