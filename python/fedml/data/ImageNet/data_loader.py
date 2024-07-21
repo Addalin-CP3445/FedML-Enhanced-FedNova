@@ -47,6 +47,8 @@ def partition_data_dirichlet(labels, client_number, alpha):
 
     label_distribution = np.bincount(labels)
     num_classes = len(label_distribution)
+    logging.info("LABELs: " + str(labels))
+    logging.info("num_classes: " + str(num_classes))
 
     # Compute the label proportions for each client
     label_proportions = np.random.dirichlet([alpha] * client_number, num_classes)
@@ -57,8 +59,15 @@ def partition_data_dirichlet(labels, client_number, alpha):
 
     # Assign indices to each client based on the label proportions
     for label in range(num_classes):
-        indices = np.where(labels == label)[0]
+        indices = []
+        for i, l in enumerate(labels):
+            if l == label:
+                indices.append(i)
+
+        #indices = np.where(labels == label)[0]
         np.random.shuffle(indices)
+        print(f"Label {label}, labels: {labels}")
+        print(f"Indices: {indices}")
         proportions = label_proportions[label]
         print(f"Label {label}, indices count: {len(indices)}, proportions: {proportions}")
         start_idx = 0
@@ -319,6 +328,8 @@ def load_partition_data_ImageNet(
     if dataset == "ILSVRC2012":
         temp_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=True)
         test_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=False)
+        #for idx, item in enumerate(temp_dataset.all_data):
+        #    logging.info(item)
         labels = [item[1] for item in temp_dataset.all_data]
     elif dataset == "ILSVRC2012_hdf5":
         temp_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)

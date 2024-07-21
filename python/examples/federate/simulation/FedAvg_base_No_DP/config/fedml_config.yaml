@@ -5,7 +5,7 @@ common_args:
 data_args:
   dataset: "ILSVRC2012"
   data_cache_dir: ~/.cache/fedml_data/imagenette2-160
-  partition_method: "hetero"
+  partition_method: "hetro"
   partition_alpha: 1.0
 
 model_args:
@@ -56,4 +56,5 @@ tracking_args:
   using_mlops: false
 
 dp_args:
-  enable_dp: false
+  enable_dp_ldp: false
+  mechanism_type: None
