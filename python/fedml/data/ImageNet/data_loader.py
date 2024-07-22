@@ -308,6 +308,8 @@ def load_partition_data_ImageNet(
     if dataset == "ILSVRC2012":
         temp_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=True)
         test_dataset = ImageNet(data_dir=data_dir, dataidxs=None, train=False)
+        #for idx, item in enumerate(temp_dataset.all_data):
+        #    logging.info(item)
         labels = [item[1] for item in temp_dataset.all_data]
     elif dataset == "ILSVRC2012_hdf5":
         temp_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)
