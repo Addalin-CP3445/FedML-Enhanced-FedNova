@@ -115,6 +115,13 @@ class ImageNet(data.Dataset):
         elif type(dataidxs) == int:
             (begin, end) = self.net_dataidx_map[dataidxs]
             self.local_data = self.all_data[begin:end]
+        elif isinstance(dataidxs, dict):
+            self.local_data = []
+            for client_idx, indices in dataidxs.items():
+                for idx in indices:
+                    self.local_data.append(self.all_data[idx])
+        elif isinstance(dataidxs, list) and all(isinstance(idx, int) for idx in dataidxs):
+            self.local_data = [self.all_data[idx] for idx in dataidxs]
         else:
             self.local_data = []
             for idxs in dataidxs:
@@ -196,6 +203,13 @@ class ImageNet_truncated(data.Dataset):
         elif type(dataidxs) == int:
             (begin, end) = self.net_dataidx_map[dataidxs]
             self.local_data = self.all_data[begin:end]
+        elif isinstance(dataidxs, dict):
+            self.local_data = []
+            for client_idx, indices in dataidxs.items():
+                for idx in indices:
+                    self.local_data.append(self.all_data[idx])
+        elif isinstance(dataidxs, list) and all(isinstance(idx, int) for idx in dataidxs):
+            self.local_data = [self.all_data[idx] for idx in dataidxs]
         else:
             self.local_data = []
             for idxs in dataidxs:

@@ -35,42 +35,31 @@ class Cutout(object):
         return img
 
 def partition_data_dirichlet(labels, client_number, alpha):
-    """
-    Partition data indices using Dirichlet distribution for non-iid partitioning.
+    min_size = 0
+    K = len(set(labels))  # Number of classes
+    N = len(labels)
+    logging.info("N = " + str(N))
+    net_dataidx_map = {}
 
-    :param labels: Array of labels in the dataset.
-    :param client_number: Number of clients to partition data for.
-    :param alpha: Dirichlet distribution parameter.
-    :return: A dictionary where keys are client indices and values are lists of data indices.
-    """
-    np.random.seed(42)  # for reproducibility
+    while min_size < 10:
+        idx_batch = [[] for _ in range(client_number)]
+        # for each class in the dataset
+        for k in range(K):
+            idx_k = np.where(np.array(labels) == k)[0]
+            np.random.shuffle(idx_k)
+            proportions = np.random.dirichlet(np.repeat(alpha, client_number))
+            ## Balance
+            proportions = np.array([p * (len(idx_j) < N / client_number) for p, idx_j in zip(proportions, idx_batch)])
+            proportions = proportions / proportions.sum()
+            proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
+            idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
+            min_size = min([len(idx_j) for idx_j in idx_batch])
 
-    label_distribution = np.bincount(labels)
-    num_classes = len(label_distribution)
+    for j in range(client_number):
+        np.random.shuffle(idx_batch[j])
+        net_dataidx_map[j] = idx_batch[j]
 
-    # Compute the label proportions for each client
-    label_proportions = np.random.dirichlet([alpha] * client_number, num_classes)
-    client_dataidx_map = {i: [] for i in range(client_number)}
-
-    print("Label distribution:", label_distribution)
-    print("Label proportions:", label_proportions)
-
-    # Assign indices to each client based on the label proportions
-    for label in range(num_classes):
-        indices = np.where(labels == label)[0]
-        np.random.shuffle(indices)
-        proportions = label_proportions[label]
-        print(f"Label {label}, indices count: {len(indices)}, proportions: {proportions}")
-        start_idx = 0
-        for client_id, proportion in enumerate(proportions):
-            num_samples = int(proportion * len(indices))
-            client_dataidx_map[client_id].extend(indices[start_idx:start_idx + num_samples])
-            start_idx += num_samples
-
-    for client_id, indices in client_dataidx_map.items():
-        print(f"Client {client_id}: {len(indices)} samples")
-
-    return client_dataidx_map
+    return net_dataidx_map
 
 def _data_transforms_ImageNet():
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
@@ -324,7 +313,7 @@ def load_partition_data_ImageNet(
         temp_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=True)
         test_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=None, train=False)
         labels = temp_dataset.all_data_hdf5.dlabel
-        
+
     # Debug: Print the labels array
     print("Labels array:", labels)
     print("Number of labels:", len(labels))
@@ -342,7 +331,7 @@ def load_partition_data_ImageNet(
     elif dataset == "ILSVRC2012_hdf5":
         train_dataset = ImageNet_hdf5(data_dir=data_dir, dataidxs=dataidxs, train=True)
 
-    net_dataidx_map = train_dataset.get_net_dataidx_map()
+    net_dataidx_map = dataidxs
 
     # logging.info("traindata_cls_counts = " + str(traindata_cls_counts))
     # train_data_num = sum([len(net_dataidx_map[r]) for r in range(client_number)])
@@ -389,6 +378,7 @@ def load_partition_data_ImageNet(
         test_data_local_dict[client_idx] = test_data_local
 
     logging.info("data_local_num_dict: %s" % data_local_num_dict)
+    class_num = 10
     return (
         train_data_num,
         test_data_num,
