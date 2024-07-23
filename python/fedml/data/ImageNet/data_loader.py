@@ -129,7 +129,7 @@ def _data_transforms_ImageNet(noise_config):
     train_transform.transforms.append(Cutout(16))
 
     if noise_config and noise_config.enable:
-        train_transform.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
+        train_transform.transforms.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
 
     valid_transform = transforms.Compose(
         [
