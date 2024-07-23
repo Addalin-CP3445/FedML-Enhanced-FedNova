@@ -3,9 +3,9 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "ILSVRC2012"
-  data_cache_dir: ~/.cache/fedml_data/imagenette2-160
-  partition_method: "hetro"
+  dataset: "cifar10"
+  data_cache_dir: ~/.cache/fedml_data
+  partition_method: "hetero"
   partition_alpha: 1.0
 
 model_args:
@@ -51,10 +51,9 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: no_dp_ImageNet
-  run_name: "FedProx"
+  wandb_project: test_FedProx
+  # run_name: "FedProx"
   using_mlops: false
 
 dp_args:
-  enable_dp_ldp: false
-  mechanism_type: None
+  enable_dp: false
