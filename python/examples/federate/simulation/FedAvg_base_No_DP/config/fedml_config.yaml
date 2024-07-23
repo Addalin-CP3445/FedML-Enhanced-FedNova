@@ -20,7 +20,7 @@ train_args:
   epochs: 2 #reduced to 2 from 10
   batch_size: 32
   client_optimizer: sgd
-  learning_rate: 0.01 
+  learning_rate: 0.03 
   weight_decay: 0.0
   gmf: 0.0
   mu : 0.0 #added now
@@ -52,7 +52,7 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: no_dp_ImageNet
-  run_name: "FedAvg"
+  run_name: "FedAvg - changed param 4"
   using_mlops: false
 
 dp_args:
