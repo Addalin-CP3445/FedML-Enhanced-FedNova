@@ -5,7 +5,7 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from torch.utils.data.distributed import DistributedSampler
-
+from PIL import Image
 
 from .datasets import ImageNet
 from .datasets import ImageNet_truncated
@@ -34,6 +34,53 @@ class Cutout(object):
         img *= mask
         return img
 
+class LaplaceNoiseConfig:
+    def __init__(self, enable=False, epsilon=0.1, sensitivity=1.0):
+        self.enable = enable
+        self.epsilon = epsilon
+        self.sensitivity = sensitivity
+
+
+class AddLaplaceNoise(object):
+    def __init__(self, epsilon, sensitivity):
+        self.epsilon = epsilon
+        self.sensitivity = sensitivity
+
+    def __call__(self, img):
+        img = np.array(img)
+
+        #if img.dtype != np.uint8:
+        #    img = img.astype(np.uint8)
+
+        scale = self.sensitivity / self.epsilon
+
+        # Generate Laplace noise
+        noise = np.random.laplace(0, scale, img.shape)
+
+        # Add noise to the image
+        noisy_image = img + noise
+
+        # Clip values to be in the valid range [0, 255]
+        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+
+        noisy_image = np.transpose(noisy_image, (1, 2, 0))
+
+        # Debugging prints
+        # print(f"Noisy image shape: {noisy_image.shape}, dtype: {noisy_image.dtype}")
+
+        # Ensure the shape and dtype are correct
+        if len(noisy_image.shape) != 3 or noisy_image.shape[2] not in [1, 3]:
+            raise ValueError(f"Unexpected noisy image shape: {noisy_image.shape}")
+        if noisy_image.dtype != np.uint8:
+            raise TypeError(f"Unexpected noisy image dtype: {noisy_image.dtype}")
+
+        Image.fromarray(noisy_image)  # Convert back to PIL Image
+        return transforms.ToTensor()(noisy_image)
+
+    
+    def __repr__(self):
+        return self.__class__.__name__ + '(epsilon={0}, sensitivity={1})'.format(self.epsilon, self.sensitivity)
+    
 def partition_data_dirichlet(labels, client_number, alpha):
     min_size = 0
     K = len(set(labels))  # Number of classes
@@ -61,7 +108,7 @@ def partition_data_dirichlet(labels, client_number, alpha):
 
     return net_dataidx_map
 
-def _data_transforms_ImageNet():
+def _data_transforms_ImageNet(noise_config):
     # IMAGENET_MEAN = [0.5071, 0.4865, 0.4409]
     # IMAGENET_STD = [0.2673, 0.2564, 0.2762]
 
@@ -80,6 +127,9 @@ def _data_transforms_ImageNet():
     )
 
     train_transform.transforms.append(Cutout(16))
+
+    if noise_config and noise_config.enable:
+        train_transform.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
 
     valid_transform = transforms.Compose(
         [
@@ -113,6 +163,7 @@ def get_dataloader_ImageNet_truncated(
     test_bs,
     dataidxs=None,
     net_dataidx_map=None,
+    noise_config = None,
 ):
     """
     imagenet_dataset_train, imagenet_dataset_test should be ImageNet or ImageNet_hdf5
@@ -123,8 +174,8 @@ def get_dataloader_ImageNet_truncated(
         dl_obj = ImageNet_truncated_hdf5
     else:
         raise NotImplementedError()
-
-    transform_train, transform_test = _data_transforms_ImageNet()
+    
+    transform_train, transform_test = _data_transforms_ImageNet(noise_config)
 
     train_ds = dl_obj(
         imagenet_dataset_train,
@@ -163,10 +214,10 @@ def get_dataloader_ImageNet_truncated(
     return train_dl, test_dl
 
 
-def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None):
+def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None, noise_config=None):
     dl_obj = ImageNet
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+    transform_train, transform_test = _data_transforms_ImageNet(noise_config)
 
     train_ds = dl_obj(
         datadir,
@@ -200,11 +251,11 @@ def get_dataloader_ImageNet(datadir, train_bs, test_bs, dataidxs=None):
 
 
 def get_dataloader_test_ImageNet(
-    datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None
+    datadir, train_bs, test_bs, dataidxs_train=None, dataidxs_test=None, noise_config=None
 ):
     dl_obj = ImageNet
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+    transform_train, transform_test = _data_transforms_ImageNet(noise_config)
 
     train_ds = dl_obj(
         datadir,
@@ -242,7 +293,7 @@ def get_dataloader_test_ImageNet(
 
 
 def distributed_centralized_ImageNet_loader(
-    dataset, data_dir, world_size, rank, batch_size
+    dataset, data_dir, world_size, rank, batch_size, noise_config=None
 ):
     """
     Used for generating distributed dataloader for
@@ -252,7 +303,7 @@ def distributed_centralized_ImageNet_loader(
     train_bs = batch_size
     test_bs = batch_size
 
-    transform_train, transform_test = _data_transforms_ImageNet()
+    transform_train, transform_test = _data_transforms_ImageNet(noise_config)
     if dataset == "ILSVRC2012":
         train_dataset = ImageNet(
             data_dir=data_dir, dataidxs=None, train=True, transform=transform_train
@@ -299,6 +350,7 @@ def distributed_centralized_ImageNet_loader(
 def load_partition_data_ImageNet(
     dataset,
     data_dir,
+    noise_config = None,
     partition_method=None,
     partition_alpha=None,
     client_number=100,
@@ -350,6 +402,7 @@ def load_partition_data_ImageNet(
         test_bs=batch_size,
         dataidxs=None,
         net_dataidx_map=None,
+        noise_config=noise_config,
     )
 
     logging.info("train_dl_global number = " + str(len(train_data_global)))
@@ -374,6 +427,7 @@ def load_partition_data_ImageNet(
             test_bs=batch_size,
             dataidxs=dataidxs[client_idx],
             net_dataidx_map=net_dataidx_map,
+            noise_config=noise_config,
         )
 
         train_data_local_dict[client_idx] = train_data_local

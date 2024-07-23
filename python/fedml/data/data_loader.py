@@ -396,6 +396,7 @@ def load_synthetic_data(args):
             partition_alpha=args.partition_alpha,
             client_number=args.client_num_in_total,
             batch_size=args.batch_size,
+            noise_config=noise_config,
         )
 
     elif dataset_name == "gld23k":
