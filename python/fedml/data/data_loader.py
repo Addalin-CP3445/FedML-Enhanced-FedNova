@@ -14,6 +14,7 @@ from .MNIST.data_loader import load_partition_data_mnist, download_mnist
 from .cifar10.data_loader import load_partition_data_cifar10
 from .cifar10.efficient_loader import efficient_load_partition_data_cifar10
 from .cifar10.efficient_loader import LaplaceNoiseConfig
+from .cifar10.efficient_loader import GaussianNoiseConfig
 from .cifar100.data_loader import load_partition_data_cifar100
 from .cinic10.data_loader import load_partition_data_cinic10
 from .edge_case_examples.data_loader import load_poisoned_dataset
@@ -251,7 +252,9 @@ def load_synthetic_data(args):
 
     noise_config = None
     if args.enable_dp_ldp and args.mechanism_type == "laplace":
-        noise_config = LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, sensitivity=args.sensitivity)    
+        noise_config = LaplaceNoiseConfig(enable=True, epsilon=args.epsilon, sensitivity=args.sensitivity)
+    elif args.enable_dp_ldp and args.mechanism_type == "gaussian":
+        noise_config = GaussianNoiseConfig(enable=True, epsilon=args.epsilon, sensitivity=args.sensitivity, delta=args.delta)
 
     dataset_name = args.dataset
     # check if the centralized training is enabled

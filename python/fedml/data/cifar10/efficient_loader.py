@@ -78,6 +78,7 @@ class LaplaceNoiseConfig:
         self.enable = enable
         self.epsilon = epsilon
         self.sensitivity = sensitivity
+        self.mechanism = 'laplace'
 
 
 class AddLaplaceNoise(object):
@@ -126,6 +127,32 @@ class AddLaplaceNoise(object):
     def __repr__(self):
         return self.__class__.__name__ + '(epsilon={0}, sensitivity={1})'.format(self.epsilon, self.sensitivity)
 
+class GaussianNoiseConfig:
+    def __init__(self, enable=False, epsilon=0.1, sensitivity=1.0, delta=0.00001):
+        self.enable = enable
+        self.epsilon = epsilon
+        self.sensitivity = sensitivity
+        self.delta = delta
+        self.mechanism = 'gaussian'
+        
+class AddGaussianNoise(object):
+    def __init__(self, epsilon, sensitivity, delta):
+        self.epsilon = epsilon
+        self.sensitivity = sensitivity
+        self.delta = delta
+
+    def __call__(self, img):
+        scale = self.sensitivity * np.sqrt(2 * np.log(1.25 / self.delta)) / self.epsilon
+        img = np.array(img).astype(np.float32) / 255.0  # Normalize image to [0, 1] range
+        noise = np.random.normal(0, scale, img.shape)
+        noisy_image = img + noise
+        noisy_image = np.clip(noisy_image, 0, 1)  # Clip to [0, 1] range
+        noisy_image = (noisy_image * 255).astype(np.uint8)  # Convert back to [0, 255]
+        return Image.fromarray(noisy_image)
+    
+    def __repr__(self):
+        return self.__class__.__name__ + '(epsilon={0}, sensitivity={1}, delta={2})'.format(self.epsilon, self.sensitivity, self.delta)
+
 def _data_transforms_cifar10(noise_config=None):
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
@@ -136,8 +163,10 @@ def _data_transforms_cifar10(noise_config=None):
         transforms.RandomHorizontalFlip(),
     ]
 
-    if noise_config and noise_config.enable:
+    if noise_config and noise_config.enable and noise_config.mechanism == 'laplace':
         train_transform.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
+    elif noise_config and noise_config.enable and noise_config.mechanism == 'gaussian':
+        train_transform.append(AddGaussianNoise(noise_config.epsilon, noise_config.sensitivity, noise_config.delta))
 
     train_transform.append(transforms.ToTensor())
     train_transform.append(transforms.Normalize(CIFAR_MEAN, CIFAR_STD))
