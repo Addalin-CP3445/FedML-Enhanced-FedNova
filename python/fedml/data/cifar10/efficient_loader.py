@@ -86,36 +86,42 @@ class AddLaplaceNoise(object):
         self.sensitivity = sensitivity
 
     def __call__(self, img):
-        img = np.array(img)
+        # img = np.array(img)
 
-        #if img.dtype != np.uint8:
-        #    img = img.astype(np.uint8)
+        # #if img.dtype != np.uint8:
+        # #    img = img.astype(np.uint8)
 
-        scale = self.sensitivity / self.epsilon
+        # scale = self.sensitivity / self.epsilon
 
-        # Generate Laplace noise
-        noise = np.random.laplace(0, scale, img.shape)
+        # # Generate Laplace noise
+        # noise = np.random.laplace(0, scale, img.shape)
 
-        # Add noise to the image
+        # # Add noise to the image
+        # noisy_image = img + noise
+
+        # # Clip values to be in the valid range [0, 255]
+        # noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
+
+        # noisy_image = np.transpose(noisy_image, (1, 2, 0))
+
+        # # Debugging prints
+        # # print(f"Noisy image shape: {noisy_image.shape}, dtype: {noisy_image.dtype}")
+
+        # # Ensure the shape and dtype are correct
+        # if len(noisy_image.shape) != 3 or noisy_image.shape[2] not in [1, 3]:
+        #     raise ValueError(f"Unexpected noisy image shape: {noisy_image.shape}")
+        # if noisy_image.dtype != np.uint8:
+        #     raise TypeError(f"Unexpected noisy image dtype: {noisy_image.dtype}")
+
+        # Image.fromarray(noisy_image)  # Convert back to PIL Image
+        # return transforms.ToTensor()(noisy_image)
+        
+        img = np.array(img).astype(np.float32) / 255.0  # Normalize image to [0, 1] range
+        noise = np.random.laplace(0, self.sensitivity / self.epsilon, img.shape)
         noisy_image = img + noise
-
-        # Clip values to be in the valid range [0, 255]
-        noisy_image = np.clip(noisy_image, 0, 255).astype(np.uint8)
-
-        noisy_image = np.transpose(noisy_image, (1, 2, 0))
-
-        # Debugging prints
-        # print(f"Noisy image shape: {noisy_image.shape}, dtype: {noisy_image.dtype}")
-
-        # Ensure the shape and dtype are correct
-        if len(noisy_image.shape) != 3 or noisy_image.shape[2] not in [1, 3]:
-            raise ValueError(f"Unexpected noisy image shape: {noisy_image.shape}")
-        if noisy_image.dtype != np.uint8:
-            raise TypeError(f"Unexpected noisy image dtype: {noisy_image.dtype}")
-
-        Image.fromarray(noisy_image)  # Convert back to PIL Image
-        return transforms.ToTensor()(noisy_image)
-
+        noisy_image = np.clip(noisy_image, 0, 1)  # Clip to [0, 1] range
+        noisy_image = (noisy_image * 255).astype(np.uint8)  # Convert back to [0, 255]
+        return Image.fromarray(noisy_image)
     
     def __repr__(self):
         return self.__class__.__name__ + '(epsilon={0}, sensitivity={1})'.format(self.epsilon, self.sensitivity)
@@ -128,15 +134,13 @@ def _data_transforms_cifar10(noise_config=None):
         transforms.ToPILImage(),
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ]
-
-    train_transform.append(Cutout(16))
 
     if noise_config and noise_config.enable:
         train_transform.append(AddLaplaceNoise(noise_config.epsilon, noise_config.sensitivity))
 
+    train_transform.append(transforms.ToTensor())
+    train_transform.append(transforms.Normalize(CIFAR_MEAN, CIFAR_STD))
     train_transform.append(Cutout(16))
 
     train_transform = transforms.Compose(train_transform)
