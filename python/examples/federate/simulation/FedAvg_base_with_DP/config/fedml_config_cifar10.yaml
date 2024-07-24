@@ -52,11 +52,11 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: fedavg_with__dp
-  # run_name: "FedAvg"
+  run_name: "corrected laplace noise"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
-  epsilon: 1.0
+  epsilon: 10.0
   mechanism_type: laplace
-  sensitivity: 25.0
+  sensitivity: 1.0

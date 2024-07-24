@@ -3,28 +3,28 @@ common_args:
   random_seed: 0
 
 data_args:
-  dataset: "cifar10"
-  data_cache_dir: ~/.cache/fedml_data
-  partition_method: "hetero"
+  dataset: "ILSVRC2012"
+  data_cache_dir: ~/.cache/fedml_data/imagenette2-160
+  partition_method: "hetro"
   partition_alpha: 1.0
 
 model_args:
   model: "VGG11"
 
 train_args:
-  federated_optimizer: "FedNova"
+  federated_optimizer: "FedAvg"
   client_id_list: "[]"
   client_num_in_total: 16
   client_num_per_round: 8  #from 4 to 6
   comm_round: 100 
-  epochs: 2 #1 #reduced to 2 from 10
-  batch_size: 32 #32
+  epochs: 2 #reduced to 2 from 10
+  batch_size: 32
   client_optimizer: sgd
-  learning_rate: 0.02 #0.00106727 
-  weight_decay: 0.0001
+  learning_rate: 0.01 
+  weight_decay: 0.0
   gmf: 0.0
   mu : 0.0 #added now
-  momentum: 0.9 #added now
+  momentum: 0.0 #added now
   dampening: 0.0
   nesterov: False
 
@@ -36,6 +36,7 @@ device_args:
   using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_local
+
 
 # device_args:
 #   using_gpu: false
@@ -50,12 +51,12 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: Corrected_Laplace_Noise
-  run_name: "FedNova"
+  wandb_project: no_dp_ImageNet
+  run_name: "FedAvg with Laplace E=10 and delta F=1"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
-  epsilon: 1.0
+  epsilon: 10.0
   mechanism_type: laplace
   sensitivity: 1.0
