@@ -52,11 +52,11 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: no_dp_ImageNet
-  run_name: "FedAvg with Laplace E=1 and delta F=1"
+  run_name: "FedAvg with Laplace E=10 and delta F=1"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
-  epsilon: 1.0
+  epsilon: 10.0
   mechanism_type: laplace
   sensitivity: 1.0
