@@ -59,3 +59,4 @@ dp_args:
   epsilon: 1.0
   mechanism_type: laplace
   sensitivity: 1.0
+  delta: 0.00001

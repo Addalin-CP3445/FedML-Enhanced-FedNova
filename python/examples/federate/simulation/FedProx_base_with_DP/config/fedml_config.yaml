@@ -51,12 +51,13 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: Corrected_Laplace_Noise
+  wandb_project: Gaussian_Noise
   run_name: "FedProx"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
   epsilon: 1.0
-  mechanism_type: laplace
+  mechanism_type: gaussian
   sensitivity: 1.0
+  delta: 0.00001
