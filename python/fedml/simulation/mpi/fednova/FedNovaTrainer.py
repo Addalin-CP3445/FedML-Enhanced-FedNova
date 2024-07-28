@@ -59,10 +59,10 @@ class FedNovaTrainer(object):
 
     def train(self, round_idx=None):
         self.args.round_idx = round_idx
-        # avg_loss, norm_grad, tau_eff = self.trainer.train(self.train_local, self.device, self.args,
-        #     ratio=self.local_sample_number / self.total_train_num)
+        avg_loss, norm_grad, tau_eff = self.trainer.train(self.train_local, self.device, self.args,
+            ratio=self.local_sample_number / self.total_train_num)
 
-        avg_loss, norm_grad, tau_eff = self.trainer.train(self.train_local, self.device, self.args)
+        # avg_loss, norm_grad, tau_eff = self.trainer.train(self.train_local, self.device, self.args)
         
         # Calculate training accuracy
         # correct = 0
