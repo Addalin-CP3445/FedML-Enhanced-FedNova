@@ -43,8 +43,13 @@ def mapping_processes_to_gpu_device_from_yaml_file_mpi(
             logging.info("i = {}, worker_number = {}".format(i, worker_number))
             assert i == worker_number
 
+        if gpu_util_map[process_id][1] == -1:
+            device_type = "cpu"
+        else:
+            device_type = "gpu"
+
         args.gpu_id = gpu_util_map[process_id][1]
-        device = ml_engine_adapter.get_device(args, device_id=str(gpu_util_map[process_id][1]), device_type="gpu")
+        device = ml_engine_adapter.get_device(args, device_id=str(gpu_util_map[process_id][1]), device_type=device_type)
         logging.info("process_id = {}, GPU device = {}".format(process_id, device))
         return device
 
