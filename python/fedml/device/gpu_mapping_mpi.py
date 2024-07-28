@@ -29,6 +29,13 @@ def mapping_processes_to_gpu_device_from_yaml_file_mpi(
                     for _ in range(num_process_on_gpu):
                         gpu_util_map[i] = (host, gpu_j)
                         i += 1
+
+            logging.info("gpu_util_map = {}".format(gpu_util_map))
+
+            # Check if process_id is within the range of gpu_util_map
+            if process_id not in gpu_util_map:
+                raise KeyError(f"Process ID {process_id} is out of range for the GPU utilization map.")
+            
             logging.info(
                 "Process %d running on host: %s, gethostname: %s, local_gpu_id: %d ..."
                 % (process_id, gpu_util_map[process_id][0], socket.gethostname(), gpu_util_map[process_id][1],)
