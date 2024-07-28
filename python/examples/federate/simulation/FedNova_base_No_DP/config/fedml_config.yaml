@@ -51,8 +51,8 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: no_dp
-  run_name: "FedNova - with clipping"
+  run_name: "FedNova - with actual clipping"
   using_mlops: false
 
 dp_args:
-  enable_dp: false
+  enable_dp_ldp: false
