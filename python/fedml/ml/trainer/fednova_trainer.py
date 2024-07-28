@@ -3,6 +3,7 @@ import copy
 import torch
 from torch import nn
 from torch.optim.optimizer import Optimizer, required
+import torch.optim as optim
 
 from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
@@ -226,16 +227,25 @@ class FedNovaModelTrainer(ClientTrainer):
 
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
-        optimizer = FedNova(
-            filter(lambda p: p.requires_grad, self.model.parameters()),
+        # optimizer = FedNova(
+        #     filter(lambda p: p.requires_grad, self.model.parameters()),
+        #     lr=self.args.learning_rate,
+        #     gmf=self.args.gmf,
+        #     mu=self.args.mu,
+        #     ratio=kwargs["ratio"],
+        #     momentum=self.args.momentum,
+        #     dampening=self.args.dampening,
+        #     weight_decay=self.args.weight_decay,
+        #     nesterov=self.args.nesterov,
+        # )
+
+        optimizer = optim.SGD(
+            self.model.parameters(),
             lr=self.args.learning_rate,
-            gmf=self.args.gmf,
-            mu=self.args.mu,
-            ratio=kwargs["ratio"],
             momentum=self.args.momentum,
-            dampening=self.args.dampening,
             weight_decay=self.args.weight_decay,
-            nesterov=self.args.nesterov,
+            dampening=self.args.dampening,
+            nesterov=self.args.nesterov
         )
 
         epoch_loss = []
