@@ -18,6 +18,31 @@ class ModelTrainerCLS(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
+    def clip_and_add_noise(model, max_grad_norm, noise_multiplier, device, dist):
+        total_norm = 0.0
+        noise = 0
+        for p in model.parameters():
+            if p.grad is not None:
+                total_norm += p.grad.data.norm(2).item() ** 2
+        total_norm = total_norm ** 0.5
+
+        clip_coef = max_grad_norm / (total_norm + 1e-6)
+        if clip_coef < 1:
+            for p in model.parameters():
+                if p.grad is not None:
+                    p.grad.data.mul_(clip_coef)
+
+        for p in model.parameters():
+            if p.grad is not None:
+
+                if dist == "laplace":
+                    laplace_noise = torch.distributions.laplace.Laplace(0, noise_multiplier * max_grad_norm)
+                    noise = laplace_noise.sample(p.grad.data.size()).to(device)
+                else:
+                    noise = torch.normal(0, noise_multiplier * max_grad_norm, p.grad.data.size()).to(device)
+
+                p.grad.data.add_(noise)
+
     def train(self, train_data, device, args):
         model = self.model
 
@@ -50,6 +75,16 @@ class ModelTrainerCLS(ClientTrainer):
                 labels = labels.long()
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
+
+                if args.enable_dp_ldp and args.mechanism_type == "DP-SGD-laplace":
+                    max_grad_norm = args.clip
+                    noise_multiplier = args.noise_multiplier
+                    self.clip_and_add_noise(model, max_grad_norm, noise_multiplier, device,'laplace')
+                elif args.enable_dp_ldp and args.mechanism_type == "DP-SGD-gaussian":
+                    max_grad_norm = args.clip
+                    noise_multiplier = args.noise_multiplier
+                    self.clip_and_add_noise(model, max_grad_norm, noise_multiplier, device,'gaussian')
+
                 optimizer.step()
 
                 # Uncommet this following line to avoid nan loss
