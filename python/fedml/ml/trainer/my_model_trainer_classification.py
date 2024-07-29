@@ -7,6 +7,7 @@ import logging
 import copy
 import logging
 
+from tensorflow_privacy.privacy.analysis import compute_rdp, get_privacy_spent
 
 # from functorch import grad_and_value, make_functional, vmap
 
@@ -64,6 +65,10 @@ class ModelTrainerCLS(ClientTrainer):
                 amsgrad=True,
             )
 
+        # RDP parameters
+        orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
+        sampling_probability = args.batch_size / len(train_data.dataset)
+
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -110,6 +115,14 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
+
+        # Compute epsilon and delta
+        rdp = compute_rdp(q=sampling_probability,
+                          noise_multiplier=args.noise_multiplier,
+                          steps=args.epochs * len(train_data) // args.batch_size,
+                          orders=orders)
+        epsilon, delta_cal = get_privacy_spent(orders, rdp, target_delta=args.delta)
+        logging.info(f"(ε = {epsilon:.2f}, δ = {delta_cal:.2f}) for α = {args.delta}")
 
     def train_iterations(self, train_data, device, args):
         model = self.model
