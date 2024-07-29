@@ -7,6 +7,7 @@ import logging
 import copy
 import logging
 
+from tensorflow_privacy.privacy.analysis import compute_rdp, get_privacy_spent
 
 # from functorch import grad_and_value, make_functional, vmap
 
@@ -17,6 +18,31 @@ class ModelTrainerCLS(ClientTrainer):
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
+
+    def clip_and_add_noise(model, max_grad_norm, noise_multiplier, device, dist):
+        total_norm = 0.0
+        noise = 0
+        for p in model.parameters():
+            if p.grad is not None:
+                total_norm += p.grad.data.norm(2).item() ** 2
+        total_norm = total_norm ** 0.5
+
+        clip_coef = max_grad_norm / (total_norm + 1e-6)
+        if clip_coef < 1:
+            for p in model.parameters():
+                if p.grad is not None:
+                    p.grad.data.mul_(clip_coef)
+
+        for p in model.parameters():
+            if p.grad is not None:
+
+                if dist == "laplace":
+                    laplace_noise = torch.distributions.laplace.Laplace(0, noise_multiplier * max_grad_norm)
+                    noise = laplace_noise.sample(p.grad.data.size()).to(device)
+                else:
+                    noise = torch.normal(0, noise_multiplier * max_grad_norm, p.grad.data.size()).to(device)
+
+                p.grad.data.add_(noise)
 
     def train(self, train_data, device, args):
         model = self.model
@@ -39,6 +65,10 @@ class ModelTrainerCLS(ClientTrainer):
                 amsgrad=True,
             )
 
+        # RDP parameters
+        orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
+        sampling_probability = args.batch_size / len(train_data.dataset)
+
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -50,6 +80,16 @@ class ModelTrainerCLS(ClientTrainer):
                 labels = labels.long()
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
+
+                if args.enable_dp_ldp and args.mechanism_type == "DP-SGD-laplace":
+                    max_grad_norm = args.clip
+                    noise_multiplier = args.noise_multiplier
+                    self.clip_and_add_noise(model, max_grad_norm, noise_multiplier, device,'laplace')
+                elif args.enable_dp_ldp and args.mechanism_type == "DP-SGD-gaussian":
+                    max_grad_norm = args.clip
+                    noise_multiplier = args.noise_multiplier
+                    self.clip_and_add_noise(model, max_grad_norm, noise_multiplier, device,'gaussian')
+
                 optimizer.step()
 
                 # Uncommet this following line to avoid nan loss
@@ -75,6 +115,14 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             )
+
+        # Compute epsilon and delta
+        rdp = compute_rdp(q=sampling_probability,
+                          noise_multiplier=args.noise_multiplier,
+                          steps=args.epochs * len(train_data) // args.batch_size,
+                          orders=orders)
+        epsilon, delta_cal = get_privacy_spent(orders, rdp, target_delta=args.delta)
+        logging.info(f"(ε = {epsilon:.2f}, δ = {delta_cal:.2f}) for α = {args.delta}")
 
     def train_iterations(self, train_data, device, args):
         model = self.model
