@@ -116,13 +116,14 @@ class ModelTrainerCLS(ClientTrainer):
                 )
             )
 
-        # Compute epsilon and delta
-        rdp = compute_rdp(q=sampling_probability,
-                          noise_multiplier=args.noise_multiplier,
-                          steps=args.epochs * len(train_data) // args.batch_size,
-                          orders=orders)
-        epsilon, delta_cal = get_privacy_spent(orders, rdp, target_delta=args.delta)
-        logging.info(f"(ε = {epsilon:.2f}, δ = {delta_cal:.2f}) for α = {args.delta}")
+        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
+            # Compute epsilon and delta
+            rdp = compute_rdp(q=sampling_probability,
+                            noise_multiplier=args.noise_multiplier,
+                            steps=args.epochs * len(train_data) // args.batch_size,
+                            orders=orders)
+            epsilon, delta_cal = get_privacy_spent(orders, rdp, target_delta=args.delta)
+            logging.info(f"(ε = {epsilon:.2f}, δ = {delta_cal:.2f}) for α = {args.delta}")
 
     def train_iterations(self, train_data, device, args):
         model = self.model
