@@ -2,4 +2,4 @@
 
 # Configuration for a single machine with 1 GPU and using CPU
 mapping_local:
-    wkstn: [1, 1, 1, 1, 1, 1, 1, 1]
+    wkstn: [4, 4]

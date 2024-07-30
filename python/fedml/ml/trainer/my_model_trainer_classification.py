@@ -7,7 +7,7 @@ import logging
 import copy
 import logging
 
-from tensorflow_privacy.privacy.analysis import compute_rdp, get_privacy_spent
+from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp, get_privacy_spent
 
 # from functorch import grad_and_value, make_functional, vmap
 
