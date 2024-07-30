@@ -7,10 +7,35 @@ import logging
 import copy
 import logging
 
-from dp_accounting.rdp import compute_rdp, get_privacy_spent
+import numpy as np
 
 # from functorch import grad_and_value, make_functional, vmap
 
+def compute_rdp(q, noise_multiplier, steps, orders):
+    """
+    Compute RDP for each order.
+    :param q: Sampling probability.
+    :param noise_multiplier: Noise multiplier.
+    :param steps: Number of steps.
+    :param orders: Orders at which to compute RDP.
+    :return: RDP values for each order.
+    """
+    rdp = []
+    for alpha in orders:
+        rdp_alpha = steps * (q ** 2) / (2 * (noise_multiplier ** 2))
+        rdp.append(rdp_alpha)
+    return np.array(rdp)
+
+def get_privacy_spent(orders, rdp, delta):
+    """
+    Convert RDP to epsilon.
+    :param orders: Orders at which RDP was computed.
+    :param rdp: RDP values.
+    :param delta: Target delta.
+    :return: Epsilon.
+    """
+    epsilons = rdp - np.log(delta) / (orders - 1)
+    return np.min(epsilons)
 
 class ModelTrainerCLS(ClientTrainer):
     def get_model_params(self):
@@ -118,12 +143,12 @@ class ModelTrainerCLS(ClientTrainer):
 
         if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
             # Compute epsilon and delta
-            rdp = compute_rdp(q=sampling_probability,
+            rdp_values = compute_rdp(q=sampling_probability,
                             noise_multiplier=args.noise_multiplier,
                             steps=args.epochs * len(train_data) // args.batch_size,
                             orders=orders)
-            epsilon, delta_cal = get_privacy_spent(orders, rdp, target_delta=args.delta)
-            logging.info(f"(ε = {epsilon:.2f}, δ = {delta_cal:.2f}) for α = {args.delta}")
+            epsilon = get_privacy_spent(orders, rdp_values, target_delta=args.delta)
+            logging.info(f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {args.delta}")
 
     def train_iterations(self, train_data, device, args):
         model = self.model
