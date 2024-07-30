@@ -8,6 +8,8 @@ import copy
 import logging
 
 import numpy as np
+from torch.optim.optimizer import Optimizer
+from torch.distributions.laplace import Laplace
 
 # from functorch import grad_and_value, make_functional, vmap
 
@@ -37,37 +39,66 @@ def get_privacy_spent(orders, rdp, delta):
     epsilons = rdp - np.log(delta) / (orders - 1)
     return np.min(epsilons)
 
+class DP_SGD(Optimizer):
+    def __init__(self, params, lr=0.01, clip_norm=1.0, noise_multiplier=1.0, batch_size=64, device='cpu', type='gaussian'):
+        defaults = dict(lr=lr, clip_norm=clip_norm, noise_multiplier=noise_multiplier, batch_size=batch_size, device=device)
+        super(DP_SGD, self).__init__(params, defaults)
+    
+    def step(self, closure=None):
+        loss = None
+        if closure is not None:
+            loss = closure()
+
+        for group in self.param_groups:
+            lr = group['lr']
+            clip_norm = group['clip_norm']
+            noise_multiplier = group['noise_multiplier']
+            batch_size = group['batch_size']
+            device = group['device']
+            
+            # Aggregate gradients
+            grad_norms = []
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                grad_norms.append(p.grad.data.norm(2))
+
+            # Clip gradients
+            total_norm = torch.stack(grad_norms).norm(2)
+            clip_coef = clip_norm / (total_norm + 1e-6)
+            if clip_coef < 1:
+                for p in group['params']:
+                    if p.grad is None:
+                        continue
+                    p.grad.data.mul_(clip_coef)
+
+            # Add noise
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                if type == 'laplace':
+                    scale = noise_multiplier * clip_norm
+                    laplace_dist = Laplace(0, scale)
+                    noise = laplace_dist.sample(p.grad.size()).to(device)
+                elif type == 'gaussian':
+                    noise = torch.normal(0, noise_multiplier * clip_norm, p.grad.size(), device=device)
+                p.grad.data.add_(noise)
+
+            # Apply gradients
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                d_p = p.grad.data
+                p.data.add_(-lr, d_p)
+
+        return loss
+
 class ModelTrainerCLS(ClientTrainer):
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
-
-    def clip_and_add_noise(self, model, max_grad_norm, noise_multiplier, device, dist):
-        total_norm = 0.0
-        noise = 0
-        for p in model.parameters():
-            if p.grad is not None:
-                total_norm += p.grad.data.norm(2).item() ** 2
-        total_norm = total_norm ** 0.5
-
-        clip_coef = max_grad_norm / (total_norm + 1e-6)
-        if clip_coef < 1:
-            for p in model.parameters():
-                if p.grad is not None:
-                    p.grad.data.mul_(clip_coef)
-
-        for p in model.parameters():
-            if p.grad is not None:
-
-                if dist == "laplace":
-                    laplace_noise = torch.distributions.laplace.Laplace(0, noise_multiplier * max_grad_norm)
-                    noise = laplace_noise.sample(p.grad.data.size()).to(device)
-                else:
-                    noise = torch.normal(0, noise_multiplier * max_grad_norm, p.grad.data.size()).to(device)
-
-                p.grad.data.add_(noise)
 
     def train(self, train_data, device, args):
         model = self.model
@@ -78,10 +109,31 @@ class ModelTrainerCLS(ClientTrainer):
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         if args.client_optimizer == "sgd":
-            optimizer = torch.optim.SGD(
-                filter(lambda p: p.requires_grad, self.model.parameters()),
-                lr=args.learning_rate,
-            )
+            if args.enable_dp_ldp and args.mechanism_type == "DP-SGD-gaussian":
+                optimizer = DP_SGD(
+                    filter(lambda p: p.requires_grad, self.model.parameters()),
+                    lr=args.learning_rate,
+                    clip_norm=args.clip_norm,
+                    noise_multiplier=args.noise_multiplier,
+                    batch_size=args.batch_size,
+                    device=device,
+                    type = 'gaussian'
+                )
+            elif args.enable_dp_ldp and args.mechanism_type == "DP-SGD-laplace":
+                optimizer = DP_SGD(
+                    filter(lambda p: p.requires_grad, self.model.parameters()),
+                    lr=args.learning_rate,
+                    clip_norm=args.clip_norm,
+                    noise_multiplier=args.noise_multiplier,
+                    batch_size=args.batch_size,
+                    device=device,
+                    type = 'laplace'
+                )
+            else:
+                optimizer = torch.optim.SGD(
+                    filter(lambda p: p.requires_grad, self.model.parameters()),
+                    lr=args.learning_rate,
+                )
         else:
             optimizer = torch.optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -105,15 +157,6 @@ class ModelTrainerCLS(ClientTrainer):
                 labels = labels.long()
                 loss = criterion(log_probs, labels)  # pylint: disable=E1102
                 loss.backward()
-
-                if args.enable_dp_ldp and args.mechanism_type == "DP-SGD-laplace":
-                    max_grad_norm = args.clip
-                    noise_multiplier = args.noise_multiplier
-                    self.clip_and_add_noise(model, max_grad_norm, noise_multiplier, device,'laplace')
-                elif args.enable_dp_ldp and args.mechanism_type == "DP-SGD-gaussian":
-                    max_grad_norm = args.clip
-                    noise_multiplier = args.noise_multiplier
-                    self.clip_and_add_noise(model, max_grad_norm, noise_multiplier, device,'gaussian')
 
                 optimizer.step()
 

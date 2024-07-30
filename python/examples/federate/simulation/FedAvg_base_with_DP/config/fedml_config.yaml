@@ -62,5 +62,5 @@ dp_args:
   # sensitivity: 1.0
   delta: 0.00001
   noise_multiplier: 4.0
-  clip: 4.0
+  clip_norm: 4.0
   mechanism_type: DP-SGD-gaussian
