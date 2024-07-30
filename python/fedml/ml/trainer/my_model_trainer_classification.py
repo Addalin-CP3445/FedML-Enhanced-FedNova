@@ -90,7 +90,7 @@ class DP_SGD(Optimizer):
                 if p.grad is None:
                     continue
                 d_p = p.grad.data
-                p.data.add_(-lr, d_p)
+                p.data.add_(d_p, alpha=-lr)
 
         return loss
 
