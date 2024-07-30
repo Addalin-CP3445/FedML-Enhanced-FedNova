@@ -44,7 +44,7 @@ class ModelTrainerCLS(ClientTrainer):
     def set_model_params(self, model_parameters):
         self.model.load_state_dict(model_parameters)
 
-    def clip_and_add_noise(model, max_grad_norm, noise_multiplier, device, dist):
+    def clip_and_add_noise(self, model, max_grad_norm, noise_multiplier, device, dist):
         total_norm = 0.0
         noise = 0
         for p in model.parameters():
