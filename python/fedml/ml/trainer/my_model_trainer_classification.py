@@ -191,7 +191,7 @@ class ModelTrainerCLS(ClientTrainer):
                             noise_multiplier=args.noise_multiplier,
                             steps=args.epochs * len(train_data) // args.batch_size,
                             orders=orders)
-            epsilon = get_privacy_spent(orders, rdp_values, target_delta=args.delta)
+            epsilon = get_privacy_spent(orders, rdp_values, delta=args.delta)
             logging.info(f"(ε = {epsilon:.2f}, δ = {args.delta}) for α = {args.delta}")
 
     def train_iterations(self, train_data, device, args):
