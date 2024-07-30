@@ -73,6 +73,7 @@ class DP_SGD(Optimizer):
                     p.grad.data.mul_(clip_coef)
 
             # Add noise
+            noise = 0
             for p in group['params']:
                 if p.grad is None:
                     continue
