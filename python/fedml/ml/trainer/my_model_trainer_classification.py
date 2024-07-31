@@ -10,37 +10,9 @@ import logging
 import numpy as np
 from torch.optim.optimizer import Optimizer
 from torch.distributions.laplace import Laplace
+import math
 
 # from functorch import grad_and_value, make_functional, vmap
-
-def compute_rdp(q, sigma, steps, orders):
-    if q == 0:
-        return np.zeros_like(orders)
-    if q == 1:
-        return np.array([np.inf] * len(orders))
-
-    rdp = []
-    for alpha in orders:
-        if alpha == np.inf:
-            rdp.append(np.inf)
-        else:
-            rdp.append(alpha / (2 * sigma ** 2))
-    
-    return np.array(rdp) * steps
-
-def get_privacy_spent(orders, rdp, delta):
-    """
-    Convert RDP to epsilon.
-    :param orders: Orders at which RDP was computed.
-    :param rdp: RDP values.
-    :param delta: Target delta.
-    :return: Epsilon.
-    """
-    rdp = np.array(rdp)
-    orders = np.array(orders)
-    epsilons = rdp - np.log(delta) / (orders - 1)
-    idx_opt = np.nanargmin(epsilons)
-    return epsilons[idx_opt]
 
 class DP_SGD(Optimizer):
     def __init__(self, params, lr=0.01, clip_norm=1.0, noise_multiplier=1.0, batch_size=64, device='cpu', type='gaussian'):
@@ -81,11 +53,11 @@ class DP_SGD(Optimizer):
                 if p.grad is None:
                     continue
                 if type == 'laplace':
-                    scale = noise_multiplier * clip_norm
+                    scale = noise_multiplier
                     laplace_dist = Laplace(0, scale)
                     noise = laplace_dist.sample(p.grad.size()).to(device)
                 elif type == 'gaussian':
-                    noise = torch.normal(0, noise_multiplier * clip_norm, p.grad.size(), device=device)
+                    noise = torch.normal(0, noise_multiplier, p.grad.size(), device=device)
                 p.grad.data.add_(noise)
 
             # Apply gradients
@@ -118,7 +90,7 @@ class ModelTrainerCLS(ClientTrainer):
                     filter(lambda p: p.requires_grad, self.model.parameters()),
                     lr=args.learning_rate,
                     clip_norm=args.clip_norm,
-                    noise_multiplier=args.noise_multiplier,
+                    noise_multiplier=args.clip_norm * math.sqrt(2 * math.log(1.25 / args.delta)) / args.epsilon,
                     batch_size=args.batch_size,
                     device=device,
                     type = 'gaussian'
@@ -128,7 +100,7 @@ class ModelTrainerCLS(ClientTrainer):
                     filter(lambda p: p.requires_grad, self.model.parameters()),
                     lr=args.learning_rate,
                     clip_norm=args.clip_norm,
-                    noise_multiplier=args.noise_multiplier,
+                    noise_multiplier=args.clip_norm / args.epsilon,
                     batch_size=args.batch_size,
                     device=device,
                     type = 'laplace'
@@ -146,13 +118,7 @@ class ModelTrainerCLS(ClientTrainer):
                 amsgrad=True,
             )
 
-        # RDP parameters
-        orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
-        sampling_probability = args.batch_size / len(train_data.dataset)
-
         epoch_loss = []
-        rdp_values = []
-        print("INITIALIZED RDP_VALUES")
         for epoch in range(args.epochs):
             batch_loss = []
 
@@ -188,26 +154,7 @@ class ModelTrainerCLS(ClientTrainer):
                 "Client Index = {}\tEpoch: {}\tLoss: {:.6f}".format(
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
-            )
-
-            if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):  
-                # Compute RDP for the current epoch
-                orders = np.arange(2, 64, 0.1)
-                rdp_epoch = compute_rdp(args.batch_size / len(train_data.dataset), args.noise_multiplier, epoch + 1, orders)
-                rdp_values.append(rdp_epoch)   
-                print("RDP_VALUES: " + str(rdp_values))
-                print("EPOCH INCRE: " + str(epoch+1))   
-                print("Sampling Prob: " + str())
-                print("orders: " + str(orders))    
-
-        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-            # Aggregate RDP values
-            rdp_total = np.sum(rdp_values, axis=0)
-            print("RDP_TOTAL: " + str(rdp_total))
-            
-            # Compute epsilon value
-            epsilon = get_privacy_spent(orders, rdp_total, delta=args.delta)
-            logging.info("Privacy loss epsilon after training: {:.6f}".format(epsilon))
+            ) 
 
     def train_iterations(self, train_data, device, args):
         model = self.model
