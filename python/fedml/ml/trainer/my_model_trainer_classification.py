@@ -152,6 +152,7 @@ class ModelTrainerCLS(ClientTrainer):
 
         epoch_loss = []
         rdp_values = []
+        print("INITIALIZED RDP_VALUES")
         for epoch in range(args.epochs):
             batch_loss = []
 
@@ -193,11 +194,13 @@ class ModelTrainerCLS(ClientTrainer):
                 # Compute RDP for the current epoch
                 orders = np.arange(2, 64, 0.1)
                 rdp_epoch = compute_rdp(args.batch_size / len(train_data.dataset), args.noise_multiplier, epoch + 1, orders)
-                rdp_values.append(rdp_epoch)          
+                rdp_values.append(rdp_epoch)   
+                print("RDP_VALUES: " + str(rdp_values))       
 
         if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
             # Aggregate RDP values
             rdp_total = np.sum(rdp_values, axis=0)
+            print("RDP_TOTAL: " + str(rdp_total))
             
             # Compute epsilon value
             epsilon = get_privacy_spent(orders, rdp_total, delta=args.delta)
