@@ -195,7 +195,10 @@ class ModelTrainerCLS(ClientTrainer):
                 orders = np.arange(2, 64, 0.1)
                 rdp_epoch = compute_rdp(args.batch_size / len(train_data.dataset), args.noise_multiplier, epoch + 1, orders)
                 rdp_values.append(rdp_epoch)   
-                print("RDP_VALUES: " + str(rdp_values))       
+                print("RDP_VALUES: " + str(rdp_values))
+                print("EPOCH INCRE: " + str(epoch+1))   
+                print("Sampling Prob: " + str())
+                print("orders: " + str(orders))    
 
         if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
             # Aggregate RDP values
