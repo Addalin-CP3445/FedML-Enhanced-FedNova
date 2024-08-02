@@ -37,6 +37,7 @@ class ModelTrainerCLS(ClientTrainer):
         model = self.model
 
         model.to(device)
+        model = extend(model)
         model.train()
 
         # train and update
@@ -45,6 +46,8 @@ class ModelTrainerCLS(ClientTrainer):
             criterion = nn.CrossEntropyLoss(reduction='sum').to(device)
         else:
             criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
+        
+        criterion = extend(criterion)
 
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
