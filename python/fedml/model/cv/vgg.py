@@ -23,19 +23,23 @@ class VGG(nn.Module):
         self, features: nn.Module, num_classes: int = 1000, init_weights: bool = True
     ) -> None:
         super(VGG, self).__init__()
-        self.features = extend(features)
+        self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
-            extend(nn.Linear(512 * 7 * 7, 4096)),
+            nn.Linear(512 * 7 * 7, 4096),
             nn.ReLU(inplace=False),
             nn.Dropout(),
-            extend(nn.Linear(4096, 4096)),
+            nn.Linear(4096, 4096),
             nn.ReLU(inplace=False),
             nn.Dropout(),
-            extend(nn.Linear(4096, num_classes)),
+            nn.Linear(4096, num_classes),
         )
         if init_weights:
             self._initialize_weights()
+
+        # Extend each layer in the classifier
+        self.classifier = extend(self.classifier)
+        self.features = extend(self.features)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
@@ -68,9 +72,9 @@ def make_layers(cfg, batch_norm=False):
             v = int(v)
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers += [extend(conv2d), nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
+                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
             else:
-                layers += [extend(conv2d), nn.ReLU(inplace=False)]
+                layers += [conv2d, nn.ReLU(inplace=False)]
             in_channels = v
     return nn.Sequential(*layers)
 
