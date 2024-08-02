@@ -90,7 +90,7 @@ class ModelTrainerCLS(ClientTrainer):
                     filter(lambda p: p.requires_grad, self.model.parameters()),
                     lr=args.learning_rate,
                     clip_norm=args.clip_norm,
-                    noise_multiplier=args.clip_norm * math.sqrt(2 * math.log(1.25 / args.delta)) / args.epsilon,
+                    noise_multiplier=args.noise_multiplier,
                     batch_size=args.batch_size,
                     device=device,
                     type = 'gaussian'
@@ -100,7 +100,7 @@ class ModelTrainerCLS(ClientTrainer):
                     filter(lambda p: p.requires_grad, self.model.parameters()),
                     lr=args.learning_rate,
                     clip_norm=args.clip_norm,
-                    noise_multiplier=args.clip_norm / args.epsilon,
+                    noise_multiplier=args.noise_multiplier,
                     batch_size=args.batch_size,
                     device=device,
                     type = 'laplace'
