@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 
-from rdp_accountant import compute_rdp, get_privacy_spent
+from .rdp_accountant import compute_rdp, get_privacy_spent
 
 
 def process_grad_batch(params, clipping=1):
