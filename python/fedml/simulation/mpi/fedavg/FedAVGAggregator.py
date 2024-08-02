@@ -48,7 +48,7 @@ class FedAVGAggregator(object):
         self.rdp_values = []
         self.rdp_orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
 
-    def compute_rdp(q, sigma, steps, orders):
+    def compute_rdp(self, q, sigma, steps, orders):
         if q == 0:
             return np.zeros_like(orders)
         if q == 1:
@@ -64,7 +64,7 @@ class FedAVGAggregator(object):
 
         return np.array(rdp) * steps
 
-    def get_privacy_spent(orders, rdp, delta):
+    def get_privacy_spent(self, orders, rdp, delta):
         """
         Convert RDP to epsilon.
         :param orders: Orders at which RDP was computed.

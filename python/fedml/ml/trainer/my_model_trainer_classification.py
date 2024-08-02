@@ -15,8 +15,8 @@ import math
 # from functorch import grad_and_value, make_functional, vmap
 
 class DP_SGD(Optimizer):
-    def __init__(self, params, lr=0.01, clip_norm=1.0, noise_multiplier=1.0, batch_size=64, device='cpu', type='gaussian'):
-        defaults = dict(lr=lr, clip_norm=clip_norm, noise_multiplier=noise_multiplier, batch_size=batch_size, device=device)
+    def __init__(self, params, lr=0.01, clip_norm=1.0, noise_multiplier=1.0, batch_size=64, device='cpu', type_noise='gaussian'):
+        defaults = dict(lr=lr, clip_norm=clip_norm, noise_multiplier=noise_multiplier, batch_size=batch_size, device=device, type_noise=type_noise)
         super(DP_SGD, self).__init__(params, defaults)
     
     def step(self, closure=None):
@@ -30,6 +30,7 @@ class DP_SGD(Optimizer):
             noise_multiplier = group['noise_multiplier']
             batch_size = group['batch_size']
             device = group['device']
+            type_noise = group['type_noise']
             
             # Aggregate gradients
             grad_norms = []
@@ -52,11 +53,11 @@ class DP_SGD(Optimizer):
             for p in group['params']:
                 if p.grad is None:
                     continue
-                if type == 'laplace':
+                if type_noise == 'laplace':
                     scale = noise_multiplier
                     laplace_dist = Laplace(0, scale)
                     noise = laplace_dist.sample(p.grad.size()).to(device)
-                elif type == 'gaussian':
+                elif type_noise == 'gaussian':
                     noise = torch.normal(0, noise_multiplier, p.grad.size(), device=device)
                 p.grad.data.add_(noise)
 
@@ -93,7 +94,7 @@ class ModelTrainerCLS(ClientTrainer):
                     noise_multiplier=args.noise_multiplier,
                     batch_size=args.batch_size,
                     device=device,
-                    type = 'gaussian'
+                    type_noise = 'gaussian'
                 )
             elif args.enable_dp_ldp and args.mechanism_type == "DP-SGD-laplace":
                 optimizer = DP_SGD(
@@ -103,7 +104,7 @@ class ModelTrainerCLS(ClientTrainer):
                     noise_multiplier=args.noise_multiplier,
                     batch_size=args.batch_size,
                     device=device,
-                    type = 'laplace'
+                    type_noise = 'laplace'
                 )
             else:
                 optimizer = torch.optim.SGD(
