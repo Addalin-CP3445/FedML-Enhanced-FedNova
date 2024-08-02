@@ -76,7 +76,7 @@ class ModelTrainerCLS(ClientTrainer):
                     loss = criterion(log_probs, labels)  # pylint: disable=E1102
                     with backpack(BatchGrad()):
                         loss.backward()
-                        process_grad_batch(list(model.parameters()), args.clip_norm) # clip gradients and sum clipped gradients
+                        process_grad_batch(list(model.parameters()), device, args.clip_norm) # clip gradients and sum clipped gradients
                         ## add noise to gradient
                         for p in model.parameters():
                             shape = p.grad.shape

@@ -12,9 +12,9 @@ import numpy as np
 from .rdp_accountant import compute_rdp, get_privacy_spent
 
 
-def process_grad_batch(params, clipping=1):
+def process_grad_batch(params, device, clipping=1):
     n = params[0].grad_batch.shape[0]
-    grad_norm_list = torch.zeros(n).cuda()
+    grad_norm_list = torch.zeros(n, device=device)
     for p in params: 
         flat_g = p.grad_batch.reshape(n, -1)
         current_norm_list = torch.norm(flat_g, dim=1)
