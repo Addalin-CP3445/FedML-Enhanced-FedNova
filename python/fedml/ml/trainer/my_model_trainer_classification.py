@@ -37,7 +37,7 @@ class ModelTrainerCLS(ClientTrainer):
         model = self.model
 
         model.to(device)
-        model = extend(model)
+        # model = extend(model)
         model.train()
 
         # train and update
