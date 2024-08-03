@@ -73,16 +73,16 @@ class ModelTrainerCLS(ClientTrainer):
                         for param in model.parameters():
                             if param.requires_grad:
                                 grad_norm = torch.norm(param.grad)
-                                print(f'Before clipping: grad_norm = {grad_norm.item()}')
+                                # print(f'Before clipping: grad_norm = {grad_norm.item()}')
                                 param.grad = param.grad / max(1, grad_norm / args.clip_norm)
                                 grad_norm_clipped = torch.norm(param.grad)
-                                print(f'After clipping: grad_norm = {grad_norm_clipped.item()}')
+                                # print(f'After clipping: grad_norm = {grad_norm_clipped.item()}')
 
                         # Add noise
                         for param in model.parameters():
                             if param.requires_grad:
                                 noise = torch.normal(0, noise_multiplier * args.clip_norm, size=param.grad.shape).to(device)
-                                print(f'Adding noise: noise std dev = {noise_multiplier * args.clip_norm}, noise shape = {noise.shape}')
+                                # print(f'Adding noise: noise std dev = {noise_multiplier * args.clip_norm}, noise shape = {noise.shape}')
                                 param.grad += noise
 
                 optimizer.step()
