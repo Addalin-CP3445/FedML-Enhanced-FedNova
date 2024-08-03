@@ -219,8 +219,8 @@ def vgg11(num_classes = 1000):
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     batch_grad_extension = BatchGrad()
-    batch_grad_extension.set_module_extension(nn.Conv2d, Conv2dBatchGrad())
-    batch_grad_extension.set_module_extension(nn.Linear, LinearBatchGrad())
+    batch_grad_extension.set_module_extension(nn.Conv2d, Conv2dBatchGrad(), overwrite=True)
+    batch_grad_extension.set_module_extension(nn.Linear, LinearBatchGrad(), overwrite=True)
     return VGG(make_layers(cfgs["A"]), num_classes=num_classes)
 
 
