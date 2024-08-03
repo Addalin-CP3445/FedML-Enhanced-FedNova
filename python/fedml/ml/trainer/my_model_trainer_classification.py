@@ -70,10 +70,13 @@ class ModelTrainerCLS(ClientTrainer):
                 if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
                     # DP-SGD specific steps
                     with torch.no_grad():
-                        # Clip gradients
                         for param in model.parameters():
                             if param.requires_grad:
-                                param.grad = param.grad / max(1, torch.norm(param.grad) / args.clip_norm)
+                                grad_norm = torch.norm(param.grad)
+                                print(f'Before clipping: grad_norm = {grad_norm.item()}')
+                                param.grad = param.grad / max(1, grad_norm / args.clip_norm)
+                                grad_norm_clipped = torch.norm(param.grad)
+                                print(f'After clipping: grad_norm = {grad_norm_clipped.item()}')
 
                         # Add noise
                         for param in model.parameters():
