@@ -82,6 +82,7 @@ class ModelTrainerCLS(ClientTrainer):
                         for param in model.parameters():
                             if param.requires_grad:
                                 noise = torch.normal(0, noise_multiplier * args.clip_norm, size=param.grad.shape).to(device)
+                                print(f'Adding noise: noise std dev = {noise_multiplier * args.clip_norm}, noise shape = {noise.shape}')
                                 param.grad += noise
 
                 optimizer.step()
