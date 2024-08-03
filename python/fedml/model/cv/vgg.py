@@ -50,7 +50,8 @@ class VGG(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
+            # elif isinstance(m, nn.BatchNorm2d):
+            elif isinstance(m, nn.GroupNorm):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
@@ -68,7 +69,8 @@ def make_layers(cfg, batch_norm=False):
             v = int(v)
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers = layers + [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
+                # layers = layers + [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
+                layers = layers + [conv2d, nn.GroupNorm(32, v), nn.ReLU(inplace=False)]
             else:
                 layers = layers + [conv2d, nn.ReLU(inplace=False)]
             in_channels = v
