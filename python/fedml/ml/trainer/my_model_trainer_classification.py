@@ -37,18 +37,11 @@ class ModelTrainerCLS(ClientTrainer):
         model = self.model
 
         model.to(device)
-        # model = extend(model)
         model.train()
 
         # train and update
-        criterion = ""
-        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-            criterion = nn.CrossEntropyLoss(reduction='sum').to(device)
-        else:
-            criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
+        criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
         
-        criterion = extend(criterion)
-
         if args.client_optimizer == "sgd":
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -68,27 +61,25 @@ class ModelTrainerCLS(ClientTrainer):
 
             for batch_idx, (x, labels) in enumerate(train_data):
                 x, labels = x.to(device), labels.to(device)
+                model.zero_grad()
+                log_probs = model(x)
+                labels = labels.long()
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
+                loss.backward()
 
                 if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    model.zero_grad()
-                    log_probs = model(x)
-                    labels = labels.long()
-                    loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                    with backpack(BatchGrad()):
-                        loss.backward()
-                        process_grad_batch(list(model.parameters()), device, args.clip_norm) # clip gradients and sum clipped gradients
-                        ## add noise to gradient
-                        for p in model.parameters():
-                            shape = p.grad.shape
-                            numel = p.grad.numel()
-                            grad_noise = torch.normal(0, noise_multiplier*args.clip_norm/args.batch_size, size=p.grad.shape, device=device)
-                            p.grad.data += grad_noise
-                else:
-                    model.zero_grad()
-                    log_probs = model(x)
-                    labels = labels.long()
-                    loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                    loss.backward()
+                    # DP-SGD specific steps
+                    with torch.no_grad():
+                        # Clip gradients
+                        for param in model.parameters():
+                            if param.requires_grad:
+                                param.grad = param.grad / max(1, torch.norm(param.grad) / args.clip_norm)
+
+                        # Add noise
+                        for param in model.parameters():
+                            if param.requires_grad:
+                                noise = torch.normal(0, noise_multiplier * args.clip_norm, size=param.grad.shape).to(device)
+                                param.grad += noise
 
                 optimizer.step()
 
@@ -105,8 +96,6 @@ class ModelTrainerCLS(ClientTrainer):
                 #     )
                 # )
                 step_loss = loss.item()
-                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    step_loss /= x.shape[0]
 
                 batch_loss.append(step_loss)
             if len(batch_loss) == 0:
@@ -187,11 +176,7 @@ class ModelTrainerCLS(ClientTrainer):
 
         metrics = {"test_correct": 0, "test_loss": 0, "test_total": 0}
 
-        criterion = ""
-        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-            criterion = nn.CrossEntropyLoss(reduction='sum').to(device)
-        else:
-            criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
+        criterion = nn.CrossEntropyLoss().to(device)  # pylint: disable=E1102
 
         with torch.no_grad():
             for batch_idx, (x, target) in enumerate(test_data):
@@ -205,8 +190,6 @@ class ModelTrainerCLS(ClientTrainer):
                 correct = predicted.eq(target).sum()
 
                 step_loss = loss.item()
-                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    step_loss /= x.shape[0]
 
                 metrics["test_correct"] += correct.item()
                 metrics["test_loss"] += step_loss * target.size(0)
