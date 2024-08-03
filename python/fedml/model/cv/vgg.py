@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-from backpack import backpack, extend
+# from backpack import backpack, extend
 
 
 __all__ = [
@@ -23,7 +23,7 @@ class VGG(nn.Module):
         self, features: nn.Module, num_classes: int = 1000, init_weights: bool = True
     ) -> None:
         super(VGG, self).__init__()
-        self.features = extend(features)
+        self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
@@ -63,14 +63,14 @@ def make_layers(cfg, batch_norm=False):
     in_channels = 3
     for v in cfg:
         if v == "M":
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+            layers = layers + [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
             v = int(v)
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
-                layers += [extend(conv2d), nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
+                layers = layers + [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
             else:
-                layers += [extend(conv2d), nn.ReLU(inplace=False)]
+                layers = layers + [conv2d, nn.ReLU(inplace=False)]
             in_channels = v
     return nn.Sequential(*layers)
 
