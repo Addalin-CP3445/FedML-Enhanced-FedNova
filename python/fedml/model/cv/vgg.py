@@ -19,121 +19,56 @@ __all__ = [
     "vgg19",
 ]
 
-class Conv2dBatchGrad(FirstOrderModuleExtension):
-    """Extract individual gradients for Conv2d layers."""
+class VGGFirstOrderExtension(FirstOrderModuleExtension):
+    """Extract individual gradients for VGG module."""
 
     def __init__(self):
+        """Store parameters for which individual gradients should be computed."""
+        # specify parameter names
         super().__init__(params=["weight", "bias"])
 
     def weight(self, ext, module, g_inp, g_out, bpQuantities):
+        """Extract individual gradients for weight parameters."""
         return g_out[0].flatten(start_dim=1).sum(axis=1).unsqueeze(-1)
 
     def bias(self, ext, module, g_inp, g_out, bpQuantities):
-        if module.bias is not None:
-            return g_out[0].sum(axis=0)
+        """Extract individual gradients for bias parameters."""
+        return g_out[0].sum(axis=0)
 
-class LinearBatchGrad(FirstOrderModuleExtension):
-    """Extract individual gradients for Linear layers."""
-
-    def __init__(self):
-        super().__init__(params=["weight", "bias"])
-
-    def weight(self, ext, module, g_inp, g_out, bpQuantities):
-        return g_out[0].flatten(start_dim=1).sum(axis=1).unsqueeze(-1)
-
-    def bias(self, ext, module, g_inp, g_out, bpQuantities):
-        if module.bias is not None:
-            return g_out[0].sum(axis=0)
-
-
-# class VGG(nn.Module):
-#     def __init__(
-#         self, features: nn.Module, num_classes: int = 1000, init_weights: bool = True
-#     ) -> None:
-#         super(VGG, self).__init__()
-#         self.features = features
-#         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
-#         self.classifier = nn.Sequential(
-#             extend(nn.Linear(512 * 7 * 7, 4096)),
-#             nn.ReLU(inplace=False),
-#             nn.Dropout(),
-#             extend(nn.Linear(4096, 4096)),
-#             nn.ReLU(inplace=False),
-#             nn.Dropout(),
-#             extend(nn.Linear(4096, num_classes)),
-#         )
-#         if init_weights:
-#             self._initialize_weights()
-
-#     def forward(self, x: torch.Tensor) -> torch.Tensor:
-#         x = self.features(x)
-#         x = self.avgpool(x)
-#         x = torch.flatten(x, 1)
-#         x = self.classifier(x)
-#         return x
-
-#     def _initialize_weights(self) -> None:
-#         for m in self.modules():
-#             if isinstance(m, nn.Conv2d):
-#                 nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-#                 if m.bias is not None:
-#                     nn.init.constant_(m.bias, 0)
-#             # elif isinstance(m, nn.BatchNorm2d):
-#             elif isinstance(m, nn.GroupNorm):
-#                 nn.init.constant_(m.weight, 1)
-#                 nn.init.constant_(m.bias, 0)
-#             elif isinstance(m, nn.Linear):
-#                 nn.init.normal_(m.weight, 0, 0.01)
-#                 nn.init.constant_(m.bias, 0)
-
-
-# def make_layers(cfg, batch_norm=False):
-#     layers = []
-#     in_channels = 3
-#     for v in cfg:
-#         if v == "M":
-#             layers = layers + [nn.MaxPool2d(kernel_size=2, stride=2)]
-#         else:
-#             v = int(v)
-#             conv2d = extend(nn.Conv2d(in_channels, v, kernel_size=3, padding=1))
-#             if batch_norm:
-#                 # layers = layers + [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
-#                 layers = layers + [conv2d, nn.GroupNorm(32, v), nn.ReLU(inplace=False)]
-#             else:
-#                 layers = layers + [conv2d, nn.ReLU(inplace=False)]
-#             in_channels = v
-#     return nn.Sequential(*layers)
 
 class VGG(nn.Module):
-    def __init__(self, features, num_classes=1000, init_weights=True):
+    def __init__(
+        self, features: nn.Module, num_classes: int = 1000, init_weights: bool = True
+    ) -> None:
         super(VGG, self).__init__()
-        self.features = self._extend_layers(features)
+        self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
-        self.classifier = self._extend_layers(nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
+        self.classifier = nn.Sequential(
+            extend(nn.Linear(512 * 7 * 7, 4096)),
             nn.ReLU(inplace=False),
             nn.Dropout(),
-            nn.Linear(4096, 4096),
+            extend(nn.Linear(4096, 4096)),
             nn.ReLU(inplace=False),
             nn.Dropout(),
-            nn.Linear(4096, num_classes),
-        ))
+            extend(nn.Linear(4096, num_classes)),
+        )
         if init_weights:
             self._initialize_weights()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
 
-    def _initialize_weights(self):
+    def _initialize_weights(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
+            # elif isinstance(m, nn.BatchNorm2d):
             elif isinstance(m, nn.GroupNorm):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -141,25 +76,80 @@ class VGG(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
-    def _extend_layers(self, module):
-        for name, layer in module.named_children():
-            module._modules[name] = extend(layer)
-        return module
 
 def make_layers(cfg, batch_norm=False):
     layers = []
     in_channels = 3
     for v in cfg:
-        if v == 'M':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        if v == "M":
+            layers = layers + [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            v = int(v)
+            conv2d = extend(nn.Conv2d(in_channels, v, kernel_size=3, padding=1))
             if batch_norm:
-                layers += [extend(conv2d), nn.GroupNorm(32, v), nn.ReLU(inplace=False)]
+                # layers = layers + [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=False)]
+                layers = layers + [conv2d, nn.GroupNorm(32, v), nn.ReLU(inplace=False)]
             else:
-                layers += [extend(conv2d), nn.ReLU(inplace=False)]
+                layers = layers + [conv2d, nn.ReLU(inplace=False)]
             in_channels = v
     return nn.Sequential(*layers)
+
+# class VGG(nn.Module):
+#     def __init__(self, features, num_classes=1000, init_weights=True):
+#         super(VGG, self).__init__()
+#         self.features = self._extend_layers(features)
+#         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+#         self.classifier = self._extend_layers(nn.Sequential(
+#             nn.Linear(512 * 7 * 7, 4096),
+#             nn.ReLU(inplace=False),
+#             nn.Dropout(),
+#             nn.Linear(4096, 4096),
+#             nn.ReLU(inplace=False),
+#             nn.Dropout(),
+#             nn.Linear(4096, num_classes),
+#         ))
+#         if init_weights:
+#             self._initialize_weights()
+
+#     def forward(self, x):
+#         x = self.features(x)
+#         x = self.avgpool(x)
+#         x = torch.flatten(x, 1)
+#         x = self.classifier(x)
+#         return x
+
+#     def _initialize_weights(self):
+#         for m in self.modules():
+#             if isinstance(m, nn.Conv2d):
+#                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+#                 if m.bias is not None:
+#                     nn.init.constant_(m.bias, 0)
+#             elif isinstance(m, nn.GroupNorm):
+#                 nn.init.constant_(m.weight, 1)
+#                 nn.init.constant_(m.bias, 0)
+#             elif isinstance(m, nn.Linear):
+#                 nn.init.normal_(m.weight, 0, 0.01)
+#                 nn.init.constant_(m.bias, 0)
+
+#     def _extend_layers(self, module):
+#         for name, layer in module.named_children():
+#             module._modules[name] = extend(layer)
+#         return module
+
+# def make_layers(cfg, batch_norm=False):
+#     layers = []
+#     in_channels = 3
+#     for v in cfg:
+#         if v == 'M':
+#             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+#         else:
+#             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+#             if batch_norm:
+#                 layers += [extend(conv2d), nn.GroupNorm(32, v), nn.ReLU(inplace=False)]
+#             else:
+#                 layers += [extend(conv2d), nn.ReLU(inplace=False)]
+#             in_channels = v
+#     return nn.Sequential(*layers)
 
 
 cfgs = {
@@ -219,8 +209,7 @@ def vgg11(num_classes = 1000):
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     batch_grad_extension = BatchGrad()
-    batch_grad_extension.set_module_extension(nn.Conv2d, Conv2dBatchGrad(), overwrite=True)
-    batch_grad_extension.set_module_extension(nn.Linear, LinearBatchGrad(), overwrite=True)
+    batch_grad_extension.set_module_extension(VGG, VGGFirstOrderExtension())
     return VGG(make_layers(cfgs["A"]), num_classes=num_classes)
 
 
