@@ -59,7 +59,8 @@ class ModelTrainerCLS(ClientTrainer):
                     # Initialize the Opacus PrivacyEngine
             privacy_engine = PrivacyEngine(
                 model,
-                sample_rate=args.batch_size / 50000,
+                batch_size=args.batch_size,
+                sample_size=50000,
                 alphas=[10, 100],
                 noise_multiplier=noise_multiplier,
                 max_grad_norm=args.max_grad_norm,
