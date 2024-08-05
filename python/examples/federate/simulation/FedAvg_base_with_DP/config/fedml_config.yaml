@@ -58,8 +58,9 @@ tracking_args:
 dp_args:
   enable_dp_ldp: true
   epsilon: 4.0
+  noise_multiplier: 0.1
   # mechanism_type: gaussian
   # sensitivity: 1.0
   delta: 0.00001
-  max_grad_norm: 4.0
+  max_grad_norm: 6.0
   mechanism_type: DP-SGD-gaussian

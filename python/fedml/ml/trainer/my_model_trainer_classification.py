@@ -26,12 +26,12 @@ class ModelTrainerCLS(ClientTrainer):
 
     def train(self, train_data, device, args):
 
-        print('\n==> Computing noise scale for privacy budget (%.1f, %f)-DP'%(args.epsilon, args.delta))
-        sampling_prob=args.batch_size/50000
-        steps = int(args.epochs/sampling_prob)
-        sigma, eps = get_sigma(sampling_prob, steps, args.epsilon, args.delta, rgp=False)
-        noise_multiplier = sigma
-        print('noise scale: ', noise_multiplier, 'privacy guarantee: ', eps)
+        # print('\n==> Computing noise scale for privacy budget (%.1f, %f)-DP'%(args.epsilon, args.delta))
+        # sampling_prob=args.batch_size/50000
+        # steps = int(args.epochs/sampling_prob)
+        # sigma, eps = get_sigma(sampling_prob, steps, args.epsilon, args.delta, rgp=False)
+        # noise_multiplier = sigma
+        # print('noise scale: ', noise_multiplier, 'privacy guarantee: ', eps)
 
 
         model = self.model
@@ -95,7 +95,7 @@ class ModelTrainerCLS(ClientTrainer):
                             # Add noise
                             noise = torch.normal(
                                 mean=0,
-                                std=noise_multiplier,
+                                std=args.noise_multiplier,
                                 size=param.accumulated_grads.shape
                             ).to(device)
                             param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
