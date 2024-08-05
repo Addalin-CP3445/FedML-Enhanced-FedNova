@@ -83,7 +83,7 @@ class ModelTrainerCLS(ClientTrainer):
                     for param in model.parameters():
                         if param.grad_sample is not None:
                             torch.nn.utils.clip_grad_norm_(param, args.max_grad_norm)
-                            noise = torch.normal(0, args.noise_multiplier * args.max_grad_norm, size=param.grad_sample.shape).to(device)
+                            noise = torch.normal(0, noise_multiplier * args.max_grad_norm, size=param.grad_sample.shape).to(device)
                             param.grad_sample += noise
                             param.grad = param.grad_sample
                             param.grad_sample = None  # Clear the intermediate gradient storage
