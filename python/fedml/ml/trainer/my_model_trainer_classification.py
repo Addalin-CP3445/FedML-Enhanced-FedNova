@@ -12,8 +12,8 @@ from torch.distributions.laplace import Laplace
 import math
 from .dp_sgd.utils import get_data_loader, get_sigma, restore_param, checkpoint, adjust_learning_rate, process_grad_batch
 
-from backpack import backpack, extend
-from backpack.extensions import BatchGrad
+from opacus import PrivacyEngine
+from opacus.utils.batch_memory_manager import BatchMemoryManager
 
 # from functorch import grad_and_value, make_functional, vmap
 
@@ -54,52 +54,31 @@ class ModelTrainerCLS(ClientTrainer):
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
+        
+        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
+                    # Initialize the Opacus PrivacyEngine
+            privacy_engine = PrivacyEngine(
+                model,
+                sample_rate=args.batch_size / 50000,
+                alphas=[10, 100],
+                noise_multiplier=noise_multiplier,
+                max_grad_norm=args.max_grad_norm,
+            )
+            privacy_engine.attach(optimizer)
 
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
 
             for batch_idx, (x, labels) in enumerate(train_data):
-                loss = 0
-                x, labels = x.to(device), labels.to(device)
-                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    for param in model.parameters():
-                        param.grad_sample = torch.zeros_like(param.data)
+                x, labels = x.to(device), labels.to(device) 
+                model.zero_grad()
+                log_probs = model(x)
+                labels = labels.long()
+                loss = criterion(log_probs, labels)  # pylint: disable=E1102
+                loss.backward()
 
-                    # Compute gradients for each sample in the batch
-                    for sample_idx in range(x.size(0)):
-                        model.zero_grad()
-                        sample_x = x[sample_idx].unsqueeze(0)
-                        sample_y = labels[sample_idx].unsqueeze(0)
-                        log_probs = model(sample_x)
-                        sample_loss = criterion(log_probs, sample_y)
-                        sample_loss.backward()
-
-                        # Accumulate gradients
-                        for param in model.parameters():
-                            if param.grad is not None:
-                                param.grad_sample += param.grad / x.size(0)  # Averaging the gradients
-
-                    # Clip and add noise
-                    for param in model.parameters():
-                        if param.grad_sample is not None:
-                            torch.nn.utils.clip_grad_norm_(param, args.max_grad_norm)
-                            noise = torch.normal(0, noise_multiplier * args.max_grad_norm, size=param.grad_sample.shape).to(device)
-                            param.grad_sample += noise
-                            param.grad = param.grad_sample
-                            param.grad_sample = None  # Clear the intermediate gradient storage
-
-                    optimizer.step()
-                    optimizer.zero_grad()
-                    loss = criterion(model(x), labels)
-                else:
-                    model.zero_grad()
-                    log_probs = model(x)
-                    labels = labels.long()
-                    loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                    loss.backward()
-
-                    optimizer.step()
+                optimizer.step()
 
                 # Uncommet this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
@@ -125,6 +104,9 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             ) 
+    
+        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
+            privacy_engine.detach()
 
     def train_iterations(self, train_data, device, args):
         model = self.model
