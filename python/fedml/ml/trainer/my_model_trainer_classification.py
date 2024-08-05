@@ -61,31 +61,38 @@ class ModelTrainerCLS(ClientTrainer):
 
             for batch_idx, (x, labels) in enumerate(train_data):
                 x, labels = x.to(device), labels.to(device)
-                model.zero_grad()
-                log_probs = model(x)
-                labels = labels.long()
-                loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                loss.backward()
-
                 if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    # DP-SGD specific steps
-                    with torch.no_grad():
-                        for param in model.parameters():
-                            if param.requires_grad:
-                                grad_norm = torch.norm(param.grad)
-                                # print(f'Before clipping: grad_norm = {grad_norm.item()}')
-                                param.grad = param.grad / max(1, grad_norm / args.clip_norm)
-                                grad_norm_clipped = torch.norm(param.grad)
-                                # print(f'After clipping: grad_norm = {grad_norm_clipped.item()}')
+                    for param in model.parameters():
+                        param.accumulated_grads = []
 
-                        # Add noise
-                        for param in model.parameters():
-                            if param.requires_grad:
-                                noise = torch.normal(0, noise_multiplier * args.clip_norm, size=param.grad.shape).to(device)
-                                # print(f'Adding noise: noise std dev = {noise_multiplier * args.clip_norm}, noise shape = {noise.shape}')
-                                param.grad += noise
+                    for sample_idx in range(x.size(0)):
+                        sample_x = x[sample_idx].unsqueeze(0)
+                        sample_y = labels[sample_idx].unsqueeze(0)
+                        log_probs = model(sample_x)
+                        sample_loss = criterion(log_probs, sample_y)
+                        sample_loss.backward()
 
-                optimizer.step()
+                        for param in model.parameters():
+                            per_sample_grad = param.grad.detach().clone()
+                            torch.nn.utils.clip_grad_norm_(per_sample_grad, max_norm=args.max_grad_norm)
+                            param.accumulated_grads.append(per_sample_grad)
+                            param.grad = None  # Clear the gradient for next sample
+
+                    for param in model.parameters():
+                        param.grad = torch.stack(param.accumulated_grads, dim=0).mean(dim=0)
+                        noise = torch.normal(mean=0, std=args.noise_multiplier * args.max_grad_norm, size=param.grad.size()).to(device)
+                        param.grad += noise
+
+                    optimizer.step()
+                    optimizer.zero_grad()
+                else:
+                    model.zero_grad()
+                    log_probs = model(x)
+                    labels = labels.long()
+                    loss = criterion(log_probs, labels)  # pylint: disable=E1102
+                    loss.backward()
+
+                    optimizer.step()
 
                 # Uncommet this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
