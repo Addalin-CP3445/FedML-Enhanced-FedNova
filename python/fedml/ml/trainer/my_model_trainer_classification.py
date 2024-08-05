@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-
+import torch.optim as optim
 from ...core.alg_frame.client_trainer import ClientTrainer
 from ...core.dp.fedml_differential_privacy import FedMLDifferentialPrivacy
 import logging
@@ -54,32 +54,63 @@ class ModelTrainerCLS(ClientTrainer):
                 weight_decay=args.weight_decay,
                 amsgrad=True,
             )
-        
-        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    # Initialize the Opacus PrivacyEngine
-            privacy_engine = PrivacyEngine(
-                model,
-                batch_size=args.batch_size,
-                sample_size=50000,
-                alphas=[10, 100],
-                noise_multiplier=noise_multiplier,
-                max_grad_norm=args.max_grad_norm,
-            )
-            privacy_engine.attach(optimizer)
+    
 
         epoch_loss = []
+        mini_batch_size = 8
         for epoch in range(args.epochs):
             batch_loss = []
 
             for batch_idx, (x, labels) in enumerate(train_data):
                 x, labels = x.to(device), labels.to(device) 
-                model.zero_grad()
-                log_probs = model(x)
-                labels = labels.long()
-                loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                loss.backward()
+                loss = 0
+                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
+                # Initialize accumulated gradients for each parameter
+                    for param in model.parameters():
+                        param.accumulated_grads = torch.zeros_like(param.data)
 
-                optimizer.step()
+                    # Divide the main batch into mini-batches
+                    for start in range(0, x.size(0), mini_batch_size):
+                        end = start + mini_batch_size
+                        x_mini, labels_mini = x[start:end], labels[start:end]
+
+                        # Compute gradients for each mini-batch
+                        optimizer.zero_grad()
+                        output = model(x_mini)
+                        loss = criterion(output, labels_mini)
+                        loss.backward()
+
+                        # Accumulate gradients
+                        for param in model.parameters():
+                            if param.grad is not None:
+                                param.accumulated_grads += param.grad
+
+                    # Clip and add noise to the accumulated gradients
+                    for param in model.parameters():
+                        if param.accumulated_grads is not None:
+                            # Clip the gradients
+                            clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                param.accumulated_grads, args.max_grad_norm
+                            )
+                            # Add noise
+                            noise = torch.normal(
+                                mean=0,
+                                std=noise_multiplier * args.max_grad_norm,
+                                size=param.accumulated_grads.shape
+                            ).to(device)
+                            param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
+
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+                else:
+                    model.zero_grad()
+                    log_probs = model(x)
+                    labels = labels.long()
+                    loss = criterion(log_probs, labels)  # pylint: disable=E1102
+                    loss.backward()
+
+                    optimizer.step()
 
                 # Uncommet this following line to avoid nan loss
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
