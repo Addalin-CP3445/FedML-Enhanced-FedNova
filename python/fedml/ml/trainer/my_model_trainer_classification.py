@@ -80,7 +80,7 @@ class ModelTrainerCLS(ClientTrainer):
 
                     for param in model.parameters():
                         param.grad = torch.stack(param.accumulated_grads, dim=0).mean(dim=0)
-                        noise = torch.normal(mean=0, std=args.noise_multiplier * args.max_grad_norm, size=param.grad.size()).to(device)
+                        noise = torch.normal(mean=0, std=noise_multiplier * args.max_grad_norm, size=param.grad.size()).to(device)
                         param.grad += noise
 
                     optimizer.step()
