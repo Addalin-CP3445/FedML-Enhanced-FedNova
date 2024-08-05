@@ -60,6 +60,7 @@ class ModelTrainerCLS(ClientTrainer):
             batch_loss = []
 
             for batch_idx, (x, labels) in enumerate(train_data):
+                loss = 0
                 x, labels = x.to(device), labels.to(device)
                 if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
                     for param in model.parameters():
@@ -90,6 +91,7 @@ class ModelTrainerCLS(ClientTrainer):
 
                     optimizer.step()
                     optimizer.zero_grad()
+                    loss = criterion(model(x), labels)
                 else:
                     model.zero_grad()
                     log_probs = model(x)
