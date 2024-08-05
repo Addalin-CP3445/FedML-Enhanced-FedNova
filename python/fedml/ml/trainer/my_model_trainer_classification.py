@@ -95,7 +95,7 @@ class ModelTrainerCLS(ClientTrainer):
                             # Add noise
                             noise = torch.normal(
                                 mean=0,
-                                std=noise_multiplier * args.max_grad_norm,
+                                std=noise_multiplier,
                                 size=param.accumulated_grads.shape
                             ).to(device)
                             param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
@@ -136,9 +136,6 @@ class ModelTrainerCLS(ClientTrainer):
                     self.id, epoch, sum(epoch_loss) / len(epoch_loss)
                 )
             ) 
-    
-        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-            privacy_engine.detach()
 
     def train_iterations(self, train_data, device, args):
         model = self.model
