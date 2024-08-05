@@ -63,25 +63,30 @@ class ModelTrainerCLS(ClientTrainer):
                 x, labels = x.to(device), labels.to(device)
                 if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
                     for param in model.parameters():
-                        param.accumulated_grads = []
+                        param.grad_sample = torch.zeros_like(param.data)
 
+                    # Compute gradients for each sample in the batch
                     for sample_idx in range(x.size(0)):
+                        model.zero_grad()
                         sample_x = x[sample_idx].unsqueeze(0)
                         sample_y = labels[sample_idx].unsqueeze(0)
                         log_probs = model(sample_x)
                         sample_loss = criterion(log_probs, sample_y)
                         sample_loss.backward()
 
+                        # Accumulate gradients
                         for param in model.parameters():
-                            per_sample_grad = param.grad.detach().clone()
-                            torch.nn.utils.clip_grad_norm_(per_sample_grad, max_norm=args.max_grad_norm)
-                            param.accumulated_grads.append(per_sample_grad)
-                            param.grad = None  # Clear the gradient for next sample
+                            if param.grad is not None:
+                                param.grad_sample += param.grad / x.size(0)  # Averaging the gradients
 
+                    # Clip and add noise
                     for param in model.parameters():
-                        param.grad = torch.stack(param.accumulated_grads, dim=0).mean(dim=0)
-                        noise = torch.normal(mean=0, std=noise_multiplier * args.max_grad_norm, size=param.grad.size()).to(device)
-                        param.grad += noise
+                        if param.grad_sample is not None:
+                            torch.nn.utils.clip_grad_norm_(param, args.max_grad_norm)
+                            noise = torch.normal(0, args.noise_multiplier * args.max_grad_norm, size=param.grad_sample.shape).to(device)
+                            param.grad_sample += noise
+                            param.grad = param.grad_sample
+                            param.grad_sample = None  # Clear the intermediate gradient storage
 
                     optimizer.step()
                     optimizer.zero_grad()
