@@ -7,7 +7,6 @@ import logging
 
 import numpy as np
 
-from opacus.grad_sample import GradSampleModule
 
 # from functorch import grad_and_value, make_functional, vmap
 
@@ -80,10 +79,8 @@ class ModelTrainerCLS(ClientTrainer):
 
         model = self.model
 
-        model.to(device)
-
-        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-            model = GradSampleModule(model)
+        if not args.enable_dp_ldp or args.mechanism_type != "DP-SGD-laplace" or args.mechanism_type != "DP-SGD-gaussian":
+            model.to(device)
 
         model.train()
 
