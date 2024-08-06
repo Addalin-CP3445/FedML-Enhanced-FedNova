@@ -69,14 +69,10 @@ class ModelTrainerCLS(ClientTrainer):
 
             for batch_idx, (x, labels) in enumerate(train_data): 
                 loss = 0
-                losses = 0
-                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    model.zero_grad()
-                    total_grads = [torch.zeros(size=param.shape).to(self.args.device) for param in model.parameters()]
-                
+                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):                
                 # Initialize accumulated gradients for each parameter
-                    # for param in model.parameters():
-                    #     param.accumulated_grads = torch.zeros_like(param.data)
+                    for param in model.parameters():
+                        param.accumulated_grads = torch.zeros_like(param.data)
 
                     # Divide the main batch into mini-batches
                     for start in range(0, x.size(0), mini_batch_size):
@@ -154,11 +150,7 @@ class ModelTrainerCLS(ClientTrainer):
                 #         loss.item(),
                 #     )
                 # )
-                step_loss = 0
-                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-                    step_loss = losses
-                else:
-                    step_loss = loss.item()
+                step_loss = loss.item()
 
                 batch_loss.append(step_loss)
             if len(batch_loss) == 0:

@@ -8,7 +8,6 @@ from ....core.security.fedml_attacker import FedMLAttacker
 from ....core.security.fedml_defender import FedMLDefender
 from ....ml.aggregator.aggregator_creator import create_server_aggregator
 from ....ml.trainer.trainer_creator import create_model_trainer
-from opacus.grad_sample import GradSampleModule
 
 
 def FedML_FedAvg_distributed(
@@ -36,10 +35,6 @@ def FedML_FedAvg_distributed(
     FedMLAttacker.get_instance().init(args)
     FedMLDefender.get_instance().init(args)
     FedMLDifferentialPrivacy.get_instance().init(args)
-
-    if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
-            model.to(device)
-            model = GradSampleModule(model)
 
     if process_id == 0:
         init_server(
