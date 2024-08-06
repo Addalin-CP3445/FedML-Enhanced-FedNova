@@ -51,7 +51,7 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: opacus DP-SGD
+  wandb_project: new DP-SGD
   run_name: "FedAvg - E=4 delta=1e-5 clip=4 (Gaussian)"
   using_mlops: false
 
@@ -62,5 +62,5 @@ dp_args:
   # mechanism_type: gaussian
   # sensitivity: 1.0
   delta: 0.00001
-  max_grad_norm: 6.0
+  max_grad_norm: 4.0
   mechanism_type: DP-SGD-gaussian
