@@ -45,38 +45,38 @@ class FedAVGAggregator(object):
         self.flag_client_model_uploaded_dict = dict()
         for idx in range(self.worker_num):
             self.flag_client_model_uploaded_dict[idx] = False
-        self.rdp_values = []
-        self.rdp_orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
+        # self.rdp_values = []
+        # self.rdp_orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
 
-    def compute_rdp(self, q, sigma, steps, orders):
-        if q == 0:
-            return np.zeros_like(orders)
-        if q == 1:
-            return np.array([np.inf] * len(orders))
+    # def compute_rdp(self, q, sigma, steps, orders):
+    #     if q == 0:
+    #         return np.zeros_like(orders)
+    #     if q == 1:
+    #         return np.array([np.inf] * len(orders))
 
-        rdp = []
-        for alpha in orders:
-            if alpha == np.inf:
-                rdp.append(np.inf)
-            else:
-                rdp_alpha = alpha * q**2 / (2 * sigma**2)
-                rdp.append(rdp_alpha)
+    #     rdp = []
+    #     for alpha in orders:
+    #         if alpha == np.inf:
+    #             rdp.append(np.inf)
+    #         else:
+    #             rdp_alpha = alpha * q**2 / (2 * sigma**2)
+    #             rdp.append(rdp_alpha)
 
-        return np.array(rdp) * steps
+    #     return np.array(rdp) * steps
 
-    def get_privacy_spent(self, orders, rdp, delta):
-        """
-        Convert RDP to epsilon.
-        :param orders: Orders at which RDP was computed.
-        :param rdp: RDP values.
-        :param delta: Target delta.
-        :return: Epsilon.
-        """
-        rdp = np.array(rdp)
-        orders = np.array(orders)
-        epsilons = rdp - np.log(delta) / (orders - 1)
-        idx_opt = np.nanargmin(epsilons)
-        return epsilons[idx_opt]
+    # def get_privacy_spent(self, orders, rdp, delta):
+    #     """
+    #     Convert RDP to epsilon.
+    #     :param orders: Orders at which RDP was computed.
+    #     :param rdp: RDP values.
+    #     :param delta: Target delta.
+    #     :return: Epsilon.
+    #     """
+    #     rdp = np.array(rdp)
+    #     orders = np.array(orders)
+    #     epsilons = rdp - np.log(delta) / (orders - 1)
+    #     idx_opt = np.nanargmin(epsilons)
+    #     return epsilons[idx_opt]
 
     def get_global_model_params(self):
         return self.aggregator.get_model_params()
@@ -195,19 +195,19 @@ class FedAVGAggregator(object):
                 self.args,
             )
 
-            if self.args.enable_dp_ldp and (self.args.mechanism_type == "DP-SGD-laplace" or self.args.mechanism_type == "DP-SGD-gaussian"):  
-                sampling_probability = self.args.batch_size / 50000
-                rdp_epoch = self.compute_rdp(sampling_probability, self.args.noise_multiplier, round_idx + 1, self.rdp_orders)
-                self.rdp_values.append(rdp_epoch)
+            # if self.args.enable_dp_ldp and (self.args.mechanism_type == "DP-SGD-laplace" or self.args.mechanism_type == "DP-SGD-gaussian"):  
+            #     sampling_probability = self.args.batch_size / 50000
+            #     rdp_epoch = self.compute_rdp(sampling_probability, self.args.noise_multiplier, round_idx + 1, self.rdp_orders)
+            #     self.rdp_values.append(rdp_epoch)
 
             metric_result_in_current_round = [0,0]
 
             if round_idx == self.args.comm_round - 1:
                 # we allow to return four metrics, such as accuracy, AUC, loss, etc.
-                if self.args.enable_dp_ldp and (self.args.mechanism_type == "DP-SGD-laplace" or self.args.mechanism_type == "DP-SGD-gaussian"):
-                    rdp_total = np.sum(self.rdp_values, axis=0)
-                    epsilon = self.get_privacy_spent(self.rdp_orders, rdp_total, delta=self.args.delta)
-                    logging.info("Privacy loss epsilon after training: {:.6f}".format(epsilon))
+                # if self.args.enable_dp_ldp and (self.args.mechanism_type == "DP-SGD-laplace" or self.args.mechanism_type == "DP-SGD-gaussian"):
+                #     rdp_total = np.sum(self.rdp_values, axis=0)
+                #     epsilon = self.get_privacy_spent(self.rdp_orders, rdp_total, delta=self.args.delta)
+                #     logging.info("Privacy loss epsilon after training: {:.6f}".format(epsilon))
 
                 metric_result_in_current_round = self.aggregator.test(self.test_global, self.device, self.args)
             else:
