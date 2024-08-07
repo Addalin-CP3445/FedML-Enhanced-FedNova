@@ -72,7 +72,7 @@ class ModelTrainerCLS(ClientTrainer):
                 if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):                
                 # Initialize accumulated gradients for each parameter
                     for param in model.parameters():
-                        param.accumulated_grads = torch.zeros_like(param.data)
+                        param.accumulated_grads = torch.zeros_like(param.data, device=device)
 
                     # Divide the main batch into mini-batches
                     for start in range(0, x.size(0), mini_batch_size):
@@ -121,8 +121,9 @@ class ModelTrainerCLS(ClientTrainer):
                                 noise = torch.normal(
                                     mean=0,
                                     std=sensitivity*noise_scale,
-                                    size=param.accumulated_grads.shape
-                                ).to(device)
+                                    size=param.accumulated_grads.shape,
+                                    device=device
+                                )
                             param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
 
                     optimizer.step()
