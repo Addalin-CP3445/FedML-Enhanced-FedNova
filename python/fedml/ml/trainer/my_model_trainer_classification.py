@@ -22,11 +22,11 @@ class ModelTrainerCLS(ClientTrainer):
     
     def calculate_noise_scale(self):
         if self.args.mechanism_type == "DP-SGD-laplace":
-            epsilon_single_query = self.args.epsilon / self.args.epochs
+            epsilon_single_query = self.args.epsilon
             return 1 / epsilon_single_query
         elif self.args.mechanism_type == "DP-SGD-gaussian":
-            epsilon_single_query = self.args.epsilon / self.args.epochs
-            delta_single_query = self.args.delta / self.args.epochs
+            epsilon_single_query = self.args.epsilon
+            delta_single_query = self.args.delta
             return np.sqrt(2 * np.log(1.25 / delta_single_query)) / epsilon_single_query
 
     def train(self, train_data, device, args):
