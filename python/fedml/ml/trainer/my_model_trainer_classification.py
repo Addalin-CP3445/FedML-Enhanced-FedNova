@@ -125,6 +125,8 @@ class ModelTrainerCLS(ClientTrainer):
                                     size=param.accumulated_grads.shape,
                                     device=device
                                 )
+                            if isinstance(noise, list):
+                                noise = torch.tensor(noise, device=device)
                             param.grad = param.accumulated_grads + noise  # Averaging gradients
 
                     optimizer.step()
