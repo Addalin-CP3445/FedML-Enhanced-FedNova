@@ -102,7 +102,6 @@ class ModelTrainerCLS(ClientTrainer):
                         noise_scale = self.calculate_noise_scale()
                         # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
                         for param in model.parameters():
-                            param.accumulated_grads /= x.size(0)
                             if param.accumulated_grads is not None:
                                 # # Clip the gradients
                                 # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
@@ -118,18 +117,18 @@ class ModelTrainerCLS(ClientTrainer):
                                     )
                                     # Sample noise from the distribution
                                     noise = laplace_dist.sample(param.accumulated_grads.shape).to(device)
-                            elif args.mechanism_type == "DP-SGD-gaussian":
-                                noise = torch.normal(
-                                    mean=0,
-                                    std=sensitivity*noise_scale,
-                                    size=param.accumulated_grads.shape,
-                                    device=device
-                                )
-                            if isinstance(noise, list):
-                                noise = torch.tensor(noise, device=device)
-                            if noise.shape != param.accumulated_grads.shape:
-                                noise = noise.view_as(param.accumulated_grads)
-                            param.grad = param.accumulated_grads + noise  # Averaging gradients
+                                elif args.mechanism_type == "DP-SGD-gaussian":
+                                    noise = torch.normal(
+                                        mean=0,
+                                        std=sensitivity*noise_scale,
+                                        size=param.accumulated_grads.shape,
+                                        device=device
+                                    )
+                                # if isinstance(noise, list):
+                                #     noise = torch.tensor(noise, device=device)
+                                # if noise.shape != param.accumulated_grads.shape:
+                                #     noise = noise.view_as(param.accumulated_grads)
+                                param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
 
                     optimizer.step()
                     model.zero_grad()
