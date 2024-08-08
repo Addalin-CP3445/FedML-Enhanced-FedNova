@@ -102,6 +102,7 @@ class ModelTrainerCLS(ClientTrainer):
                         noise_scale = self.calculate_noise_scale()
                         # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
                         for param in model.parameters():
+                            param.accumulated_grads /= x.size(0)
                             if param.accumulated_grads is not None:
                                 # # Clip the gradients
                                 # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
@@ -124,7 +125,7 @@ class ModelTrainerCLS(ClientTrainer):
                                     size=param.accumulated_grads.shape,
                                     device=device
                                 )
-                            param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
+                            param.grad = param.accumulated_grads + noise  # Averaging gradients
 
                     optimizer.step()
                     model.zero_grad()
