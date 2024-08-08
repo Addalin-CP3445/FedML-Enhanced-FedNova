@@ -135,7 +135,7 @@ class ModelTrainerCLS(ClientTrainer):
                                 #     noise = torch.tensor(noise, device=device)
                                 # if noise.shape != param.accumulated_grads.shape:
                                 #     noise = noise.view_as(param.accumulated_grads)
-                                param.grad = param.accumulated_grads / x.size(0) + noise  # Averaging gradients
+                                param.grad = param.accumulated_grads / x.size(0) + noise.to(dtype=param.accumulated_grads.dtype)  # Averaging gradients
 
                     optimizer.step()
                     model.zero_grad()
