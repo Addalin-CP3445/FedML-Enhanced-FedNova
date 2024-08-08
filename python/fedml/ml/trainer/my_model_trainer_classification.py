@@ -127,6 +127,8 @@ class ModelTrainerCLS(ClientTrainer):
                                 )
                             if isinstance(noise, list):
                                 noise = torch.tensor(noise, device=device)
+                            if noise.shape != param.accumulated_grads.shape:
+                                noise = noise.view_as(param.accumulated_grads)
                             param.grad = param.accumulated_grads + noise  # Averaging gradients
 
                     optimizer.step()
