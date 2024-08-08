@@ -13,6 +13,7 @@ import numpy as np
 class ModelTrainerCLS(ClientTrainer):
 
     large_laplace_noise = None
+    large_noise_size = 1000000  # Adjust this value as needed
 
     def get_model_params(self):
         return self.model.cpu().state_dict()
@@ -33,14 +34,14 @@ class ModelTrainerCLS(ClientTrainer):
             return np.sqrt(2 * np.log(1.25 / delta_single_query)) / epsilon_single_query
     
     def laplace_noise(self, shape, loc, scale):
-        if ModelTrainerCLS.large_laplace_noise == None:
-            logging.info("Creating large batch")
-            gen = torch.distributions.Laplace(loc, scale)
-            ModelTrainerCLS.large_laplace_noise = gen.sample((1000000,)) 
-        
-        
         total_size = torch.Size(shape).numel()
-        return ModelTrainerCLS.large_laplace_noise[:total_size].clone().reshape(shape) 
+        if ModelTrainerCLS.large_laplace_noise is None or total_size > ModelTrainerCLS.large_noise_size:
+            gen = torch.distributions.Laplace(loc, scale)
+            ModelTrainerCLS.large_laplace_noise = gen.sample((max(total_size, ModelTrainerCLS.large_noise_size),))  # Generate on CPU
+            ModelTrainerCLS.large_noise_size = max(total_size, ModelTrainerCLS.large_noise_size)
+
+        noise = ModelTrainerCLS.large_laplace_noise[:total_size].clone().reshape(shape)
+        return noise
 
     def train(self, train_data, device, args):
 
