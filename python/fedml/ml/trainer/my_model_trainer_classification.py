@@ -97,26 +97,26 @@ class ModelTrainerCLS(ClientTrainer):
                             if param.grad is not None:
                                 param.accumulated_grads += param.grad
 
-                    # Clip and add noise to the accumulated gradients
-                    sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
-                    noise_scale = self.calculate_noise_scale()
-                    # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
-                    for param in model.parameters():
-                        if param.accumulated_grads is not None:
-                            # # Clip the gradients
-                            # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
-                            #     param.accumulated_grads, args.max_grad_norm
-                            # )
-                            # # Add noise
-                            noise = []
-                            if args.mechanism_type == "DP-SGD-laplace":
-                                # Create a Laplace distribution with mean and std
-                                laplace_dist = torch.distributions.Laplace(
-                                    loc=0,
-                                    scale=sensitivity * noise_scale
-                                )
-                                # Sample noise from the distribution
-                                noise = laplace_dist.sample(param.accumulated_grads.shape).to(device)
+                        # Clip and add noise to the accumulated gradients
+                        sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
+                        noise_scale = self.calculate_noise_scale()
+                        # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
+                        for param in model.parameters():
+                            if param.accumulated_grads is not None:
+                                # # Clip the gradients
+                                # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                #     param.accumulated_grads, args.max_grad_norm
+                                # )
+                                # # Add noise
+                                noise = []
+                                if args.mechanism_type == "DP-SGD-laplace":
+                                    # Create a Laplace distribution with mean and std
+                                    laplace_dist = torch.distributions.Laplace(
+                                        loc=0,
+                                        scale=sensitivity * noise_scale
+                                    )
+                                    # Sample noise from the distribution
+                                    noise = laplace_dist.sample(param.accumulated_grads.shape).to(device)
                             elif args.mechanism_type == "DP-SGD-gaussian":
                                 noise = torch.normal(
                                     mean=0,
