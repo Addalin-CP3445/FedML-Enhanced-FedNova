@@ -64,6 +64,8 @@ class ModelTrainerCLS(ClientTrainer):
 
         epoch_loss = []
         mini_batch_size = 8
+        sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
+        noise_scale = self.calculate_noise_scale()
         for epoch in range(args.epochs):
             batch_loss = []
 
@@ -85,12 +87,21 @@ class ModelTrainerCLS(ClientTrainer):
                         loss = criterion(output, labels_mini)
                         loss.backward()
 
-                        for param in model.parameters():
-                            if param.accumulated_grads is not None:
-                                # Clip the gradients
-                                clip_grad_norm = torch.nn.utils.clip_grad_norm_(
-                                    param.accumulated_grads, args.max_grad_norm
-                                )
+                        if args.mechanism_type == "DP-SGD-laplace":
+                            for param in model.parameters():
+                                if param.accumulated_grads is not None:
+                                    # Clip the gradients
+                                    clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                        param.accumulated_grads, args.max_grad_norm, norm_type=1.0
+                                    )
+                        elif args.mechanism_type == "DP-SGD-gaussian":
+                            for param in model.parameters():
+                                if param.accumulated_grads is not None:
+                                    # Clip the gradients
+                                    clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                        param.accumulated_grads, args.max_grad_norm
+                                    )
+                        
 
                         # Accumulate gradients
                         for param in model.parameters():
@@ -98,8 +109,7 @@ class ModelTrainerCLS(ClientTrainer):
                                 param.accumulated_grads += param.grad
 
                         # Clip and add noise to the accumulated gradients
-                        sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
-                        noise_scale = self.calculate_noise_scale()
+                        
                         # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
                         for param in model.parameters():
                             if param.accumulated_grads is not None:
