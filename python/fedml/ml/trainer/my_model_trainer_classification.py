@@ -28,6 +28,12 @@ class ModelTrainerCLS(ClientTrainer):
             epsilon_single_query = self.args.epsilon
             delta_single_query = self.args.delta
             return np.sqrt(2 * np.log(1.25 / delta_single_query)) / epsilon_single_query
+    
+    def laplace_noise(self, shape, loc, scale, device):
+        uniform = torch.rand(shape, device=device) - 0.5
+        epsilon = 1e-10  # Small value to prevent log of zero
+        noise = loc - scale * torch.sign(uniform) * torch.log1p(-2 * torch.abs(uniform) + epsilon)
+        return noise
 
     def train(self, train_data, device, args):
 
@@ -121,9 +127,11 @@ class ModelTrainerCLS(ClientTrainer):
                                 noise = []
                                 if args.mechanism_type == "DP-SGD-laplace":
                                     # Create a Laplace distribution with mean and std
-                                    laplace_dist = np.random.laplace(loc=0, scale=sensitivity*noise_scale, size=param.accumulated_grads.shape)
+                                    # laplace_dist = np.random.laplace(loc=0, scale=sensitivity*noise_scale, size=param.accumulated_grads.shape)
                                     # Sample noise from the distribution
-                                    noise = torch.from_numpy(laplace_dist).to(device)
+                                    # noise = torch.from_numpy(laplace_dist).to(device)
+
+                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=sensitivity * noise_scale, device=device)
                                 elif args.mechanism_type == "DP-SGD-gaussian":
                                     noise = torch.normal(
                                         mean=0,
