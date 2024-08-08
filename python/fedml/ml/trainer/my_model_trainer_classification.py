@@ -36,7 +36,7 @@ class ModelTrainerCLS(ClientTrainer):
         if ModelTrainerCLS.large_laplace_noise == None:
             logging.info("Creating large batch")
             gen = torch.distributions.Laplace(loc, scale)
-            ModelTrainerCLS.large_laplace_noise = gen.sample(1000000)
+            ModelTrainerCLS.large_laplace_noise = gen.sample((1000000,)) 
         
         
         total_size = torch.Size(shape).numel()
