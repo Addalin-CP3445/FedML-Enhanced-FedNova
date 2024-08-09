@@ -106,7 +106,7 @@ class ModelTrainerCLS(ClientTrainer):
                                 if param.accumulated_grads is not None:
                                     # Clip the gradients
                                     clip_grad_norm = torch.nn.utils.clip_grad_norm_(
-                                        param.accumulated_grads, args.max_grad_norm, norm_type=1.0
+                                        param.accumulated_grads, args.max_grad_norm
                                     )
                         elif args.mechanism_type == "DP-SGD-gaussian":
                             for param in model.parameters():
