@@ -125,33 +125,33 @@ class ModelTrainerCLS(ClientTrainer):
                         # Clip and add noise to the accumulated gradients
                         
                         # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
-                    for param in model.parameters():
-                        if param.accumulated_grads is not None:
-                                # # Clip the gradients
-                                # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
-                                #     param.accumulated_grads, args.max_grad_norm
-                                # )
-                                # # Add noise
-                            noise = []
-                            if args.mechanism_type == "DP-SGD-laplace":
-                                    # Create a Laplace distribution with mean and std
-                                    # laplace_dist = np.random.laplace(loc=0, scale=sensitivity*noise_scale, size=param.accumulated_grads.shape)
-                                    # Sample noise from the distribution
-                                    # noise = torch.from_numpy(laplace_dist).to(device)
+                        for param in model.parameters():
+                            if param.accumulated_grads is not None:
+                                    # # Clip the gradients
+                                    # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                    #     param.accumulated_grads, args.max_grad_norm
+                                    # )
+                                    # # Add noise
+                                noise = []
+                                if args.mechanism_type == "DP-SGD-laplace":
+                                        # Create a Laplace distribution with mean and std
+                                        # laplace_dist = np.random.laplace(loc=0, scale=sensitivity*noise_scale, size=param.accumulated_grads.shape)
+                                        # Sample noise from the distribution
+                                        # noise = torch.from_numpy(laplace_dist).to(device)
 
-                                noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=sensitivity * noise_scale).to(device)
-                            elif args.mechanism_type == "DP-SGD-gaussian":
-                                noise = torch.normal(
-                                        mean=0,
-                                        std=sensitivity*noise_scale,
-                                        size=param.accumulated_grads.shape,
-                                        device=device
-                                )
-                                # if isinstance(noise, list):
-                                #     noise = torch.tensor(noise, device=device)
-                                # if noise.shape != param.accumulated_grads.shape:
-                                #     noise = noise.view_as(param.accumulated_grads)
-                            param.grad = param.accumulated_grads / x.size(0) + noise.to(dtype=param.accumulated_grads.dtype)  # Averaging gradients
+                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=sensitivity * noise_scale).to(device)
+                                elif args.mechanism_type == "DP-SGD-gaussian":
+                                    noise = torch.normal(
+                                            mean=0,
+                                            std=sensitivity*noise_scale,
+                                            size=param.accumulated_grads.shape,
+                                            device=device
+                                    )
+                                    # if isinstance(noise, list):
+                                    #     noise = torch.tensor(noise, device=device)
+                                    # if noise.shape != param.accumulated_grads.shape:
+                                    #     noise = noise.view_as(param.accumulated_grads)
+                                param.grad = param.accumulated_grads / x.size(0) + noise.to(dtype=param.accumulated_grads.dtype)  # Averaging gradients
 
                     optimizer.step()
                     model.zero_grad()
