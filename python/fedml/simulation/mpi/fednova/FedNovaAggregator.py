@@ -118,6 +118,12 @@ class FedNovaAggregator(object):
     def fednova_aggregate(self, params, norm_grads, tau_effs, tau_eff=0):
         if tau_eff == 0:
             tau_eff = sum(tau_effs)
+
+            # Move all gradients to the same device as the initial params
+        for i in range(len(norm_grads)):
+            for k in norm_grads[i].keys():
+                norm_grads[i][k] = norm_grads[i][k].to(params[k].device)
+
         cum_grad = norm_grads[0]
         for k in norm_grads[0].keys():
             for i in range(len(norm_grads)):
