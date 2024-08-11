@@ -139,7 +139,7 @@ class ModelTrainerCLS(ClientTrainer):
                                         # Sample noise from the distribution
                                         # noise = torch.from_numpy(laplace_dist).to(device)
 
-                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=noise_scale*0.003125).to(device)
+                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=noise_scale*sensitivity*0.01).to(device)
                                 elif args.mechanism_type == "DP-SGD-gaussian":
                                     noise = torch.normal(
                                             mean=0,
