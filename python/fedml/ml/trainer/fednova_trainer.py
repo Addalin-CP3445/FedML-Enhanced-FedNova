@@ -195,28 +195,37 @@ class FedNovaModelTrainer(ClientTrainer):
         self.model.load_state_dict(model_parameters)
 
     def get_local_norm_grad(self, opt, cur_params, init_params, weight=0):
-        if weight == 0:
-            weight = opt.ratio
+        # if weight == 0:
+        #     weight = opt.ratio
+        # grad_dict = {}
+        # for k in cur_params.keys():
+        #     scale = 1.0 / opt.local_normalizing_vec
+        #     #logging.info("opt.local_normalizing_vec: {}".format(opt.local_normalizing_vec))
+        #     # logging.info("init_params[k]: {}".format(init_params[k]))
+        #     # logging.info("cur_params[k]: {}".format(cur_params[k]))
+        #     cum_grad = init_params[k] - cur_params[k]
+        #     #cum_grad = (init_params[k].float() - cur_params[k].float()).float()
+        #     # logging.info("weight: {}".format(weight))
+        #     # logging.info("scale: {}".format(scale))
+        #     # logging.info("cum_grad: {}".format(cum_grad))
+        #     cum_grad.mul_(weight * scale)
+        #     grad_dict[k] = cum_grad
+        # return grad_dict
         grad_dict = {}
         for k in cur_params.keys():
-            scale = 1.0 / opt.local_normalizing_vec
-            #logging.info("opt.local_normalizing_vec: {}".format(opt.local_normalizing_vec))
-            # logging.info("init_params[k]: {}".format(init_params[k]))
-            # logging.info("cur_params[k]: {}".format(cur_params[k]))
+            scale = 1.0 / self.local_normalizing_vec
             cum_grad = init_params[k] - cur_params[k]
-            #cum_grad = (init_params[k].float() - cur_params[k].float()).float()
-            # logging.info("weight: {}".format(weight))
-            # logging.info("scale: {}".format(scale))
-            # logging.info("cum_grad: {}".format(cum_grad))
             cum_grad.mul_(weight * scale)
             grad_dict[k] = cum_grad
         return grad_dict
 
-    def get_local_tau_eff(self, opt):
-        if opt.mu != 0:
-            return opt.local_steps * opt.ratio
-        else:
-            return opt.local_normalizing_vec * opt.ratio
+    def get_local_tau_eff(self, opt, ratio):
+        # if opt.mu != 0:
+        #     return opt.local_steps * opt.ratio
+        # else:
+        #     return opt.local_normalizing_vec * opt.ratio
+        
+        return self.local_steps * ratio
 
     def train(self, train_data, device, args, **kwargs):
         model = self.model
@@ -227,27 +236,29 @@ class FedNovaModelTrainer(ClientTrainer):
 
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
-        optimizer = FedNova(
-            filter(lambda p: p.requires_grad, self.model.parameters()),
-            lr=self.args.learning_rate,
-            gmf=self.args.gmf,
-            mu=self.args.mu,
-            ratio=kwargs["ratio"],
-            momentum=self.args.momentum,
-            dampening=self.args.dampening,
-            weight_decay=self.args.weight_decay,
-            nesterov=self.args.nesterov,
-        )
-
-        # optimizer = optim.SGD(
-        #     self.model.parameters(),
+        # optimizer = FedNova(
+        #     filter(lambda p: p.requires_grad, self.model.parameters()),
         #     lr=self.args.learning_rate,
+        #     gmf=self.args.gmf,
+        #     mu=self.args.mu,
+        #     ratio=kwargs["ratio"],
         #     momentum=self.args.momentum,
-        #     weight_decay=self.args.weight_decay,
         #     dampening=self.args.dampening,
-        #     nesterov=self.args.nesterov
+        #     weight_decay=self.args.weight_decay,
+        #     nesterov=self.args.nesterov,
         # )
 
+        optimizer = optim.SGD(
+            self.model.parameters(),
+            lr=self.args.learning_rate,
+            momentum=self.args.momentum,
+            weight_decay=self.args.weight_decay,
+            dampening=self.args.dampening,
+            nesterov=self.args.nesterov
+        )
+
+        self.local_steps = 0
+        self.local_normalizing_vec = 0
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -269,6 +280,8 @@ class FedNovaModelTrainer(ClientTrainer):
                             param.grad = noisy_grad[name]
 
                 optimizer.step()
+                self.local_steps += 1
+                self.local_normalizing_vec += 1 
                 batch_loss.append(loss.item())
                 
             if batch_loss:
@@ -284,7 +297,7 @@ class FedNovaModelTrainer(ClientTrainer):
                 )
             )
         norm_grad = self.get_local_norm_grad(optimizer, model.state_dict(), init_params)
-        tau_eff = self.get_local_tau_eff(optimizer)
+        tau_eff = self.get_local_tau_eff(optimizer, kwargs["ratio"])
         # self.reset_fednova_optimizer(optimizer)
         return sum(epoch_loss) / len(epoch_loss), norm_grad, tau_eff
 
