@@ -200,14 +200,14 @@ class FedNovaModelTrainer(ClientTrainer):
         grad_dict = {}
         for k in cur_params.keys():
             scale = 1.0 / opt.local_normalizing_vec
-            logging.info("opt.local_normalizing_vec: {}".format(opt.local_normalizing_vec))
-            logging.info("init_params[k]: {}".format(init_params[k]))
-            logging.info("cur_params[k]: {}".format(cur_params[k]))
+            #logging.info("opt.local_normalizing_vec: {}".format(opt.local_normalizing_vec))
+            # logging.info("init_params[k]: {}".format(init_params[k]))
+            # logging.info("cur_params[k]: {}".format(cur_params[k]))
             cum_grad = init_params[k] - cur_params[k]
             #cum_grad = (init_params[k].float() - cur_params[k].float()).float()
-            logging.info("weight: {}".format(weight))
-            logging.info("scale: {}".format(scale))
-            logging.info("cum_grad: {}".format(cum_grad))
+            # logging.info("weight: {}".format(weight))
+            # logging.info("scale: {}".format(scale))
+            # logging.info("cum_grad: {}".format(cum_grad))
             cum_grad.mul_(weight * scale)
             grad_dict[k] = cum_grad
         return grad_dict
@@ -227,26 +227,26 @@ class FedNovaModelTrainer(ClientTrainer):
 
         # train and update
         criterion = nn.CrossEntropyLoss().to(device)
-        # optimizer = FedNova(
-        #     filter(lambda p: p.requires_grad, self.model.parameters()),
-        #     lr=self.args.learning_rate,
-        #     gmf=self.args.gmf,
-        #     mu=self.args.mu,
-        #     ratio=kwargs["ratio"],
-        #     momentum=self.args.momentum,
-        #     dampening=self.args.dampening,
-        #     weight_decay=self.args.weight_decay,
-        #     nesterov=self.args.nesterov,
-        # )
-
-        optimizer = optim.SGD(
-            self.model.parameters(),
+        optimizer = FedNova(
+            filter(lambda p: p.requires_grad, self.model.parameters()),
             lr=self.args.learning_rate,
+            gmf=self.args.gmf,
+            mu=self.args.mu,
+            ratio=kwargs["ratio"],
             momentum=self.args.momentum,
-            weight_decay=self.args.weight_decay,
             dampening=self.args.dampening,
-            nesterov=self.args.nesterov
+            weight_decay=self.args.weight_decay,
+            nesterov=self.args.nesterov,
         )
+
+        # optimizer = optim.SGD(
+        #     self.model.parameters(),
+        #     lr=self.args.learning_rate,
+        #     momentum=self.args.momentum,
+        #     weight_decay=self.args.weight_decay,
+        #     dampening=self.args.dampening,
+        #     nesterov=self.args.nesterov
+        # )
 
         epoch_loss = []
         for epoch in range(args.epochs):
