@@ -32,7 +32,7 @@ validation_args:
   frequency_of_the_test: 2
 
 device_args:
-  worker_num: 10
+  worker_num: 8
   using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_local
@@ -51,8 +51,9 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: no_dp
-  run_name: "FedNova - with actual clipping"
+  run_name: "FedNova testing actual"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: false
+  mechanism_type: None
