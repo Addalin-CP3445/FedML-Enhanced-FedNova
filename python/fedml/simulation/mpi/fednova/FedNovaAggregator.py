@@ -10,6 +10,7 @@ from .utils import transform_list_to_tensor
 from ....core.schedule.runtime_estimate import t_sample_fit
 from ....core.schedule.seq_train_scheduler import SeqTrainScheduler
 
+import gc
 
 class FedNovaAggregator(object):
     def __init__(
@@ -147,6 +148,8 @@ class FedNovaAggregator(object):
                 params[k].sub_(self.args.learning_rate, buf.to(params[k].device))
             else:
                 params[k].sub_(cum_grad[k].to(params[k].device))
+        del cum_grad, norm_grads
+        torch.cuda.empty_cache()
         return params
 
     def aggregate(self):
@@ -165,6 +168,10 @@ class FedNovaAggregator(object):
         logging.info("|||||||||||||||||||||||||||||||||||||||||||||||||init_params: {}".format(init_params))
         w_global = self.fednova_aggregate(init_params, grad_results, t_eff_results)
         self.set_global_model_params(w_global)
+        
+        del grad_results, t_eff_results, init_params
+        gc.collect()
+        torch.cuda.empty_cache()
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))

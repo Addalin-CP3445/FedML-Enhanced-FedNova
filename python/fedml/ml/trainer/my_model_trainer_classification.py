@@ -66,6 +66,10 @@ class ModelTrainerCLS(ClientTrainer):
             optimizer = torch.optim.SGD(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=args.learning_rate,
+                momentum=args.momentum,
+                weight_decay=args.weight_decay,
+                dampening=args.dampening,
+                nesterov=args.nesterov
             )
         else:
             optimizer = torch.optim.Adam(
@@ -78,8 +82,9 @@ class ModelTrainerCLS(ClientTrainer):
 
         epoch_loss = []
         mini_batch_size = 8
-        sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
-        noise_scale = self.calculate_noise_scale()
+        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
+            sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
+            noise_scale = self.calculate_noise_scale()
         for epoch in range(args.epochs):
             batch_loss = []
 
@@ -163,7 +168,7 @@ class ModelTrainerCLS(ClientTrainer):
                     labels = labels.long()
                     loss = criterion(log_probs, labels)  # pylint: disable=E1102
                     loss.backward()
-
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.5)
                     optimizer.step()
 
                 # Uncommet this following line to avoid nan loss

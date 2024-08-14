@@ -9,6 +9,7 @@ from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
 from collections import OrderedDict
 
+import gc
 """
 FedNova Optimizer implementation cited from https://github.com/JYWa/FedNova/tree/master
 """
@@ -184,9 +185,9 @@ class FedNova(Optimizer):
 
 class FedNovaModelTrainer(ClientTrainer):
 
-    def __init__(self, model, args, dp=None):
-        super().__init__(model, args)
-        self.dp = dp
+    #def __init__(self, model, args, dp=None):
+     #   super().__init__(model, args)
+      #  self.dp = dp
 
     def get_model_params(self):
         return self.model.cpu().state_dict()
@@ -212,7 +213,7 @@ class FedNovaModelTrainer(ClientTrainer):
             grad_dict[k] = cum_grad
         return grad_dict
 
-    def get_local_tau_eff(self, opt, ratio):
+    def get_local_tau_eff(self, opt):
         if opt.mu != 0:
             return opt.local_steps * opt.ratio
         else:
@@ -240,8 +241,10 @@ class FedNovaModelTrainer(ClientTrainer):
             nesterov=self.args.nesterov,
         )
 
-        self.local_steps = 0
-        self.local_normalizing_vec = 0
+        #self.local_steps = 0
+        #self.local_normalizing_vec = 0
+        gc.collect()
+        torch.cuda.empty_cache()
         epoch_loss = []
         for epoch in range(args.epochs):
             batch_loss = []
@@ -255,17 +258,19 @@ class FedNovaModelTrainer(ClientTrainer):
                 # Uncommet this following line to avoid nan loss
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 
-                if self.dp:
-                    local_grad = OrderedDict((name, param.grad) for name, param in model.named_parameters() if param.grad is not None)
-                    noisy_grad = self.dp.add_local_noise(local_grad)
-                    for name, param in model.named_parameters():
-                        if param.grad is not None:
-                            param.grad = noisy_grad[name]
+                #if self.dp:
+                 #   local_grad = OrderedDict((name, param.grad) for name, param in model.named_parameters() if param.grad is not None)
+                  #  noisy_grad = self.dp.add_local_noise(local_grad)
+                  #  for name, param in model.named_parameters():
+                   #     if param.grad is not None:
+                    #        param.grad = noisy_grad[name]
 
                 optimizer.step()
-                self.local_steps += 1
-                self.local_normalizing_vec += 1 
+                #self.local_steps += 1
+                #self.local_normalizing_vec += 1
                 batch_loss.append(loss.item())
+                del log_probs, loss, x, labels
+                torch.cuda.empty_cache() 
                 
             if batch_loss:
                 epoch_loss.append(sum(batch_loss) / len(batch_loss))
@@ -280,8 +285,10 @@ class FedNovaModelTrainer(ClientTrainer):
                 )
             )
         norm_grad = self.get_local_norm_grad(optimizer, model.state_dict(), init_params)
-        tau_eff = self.get_local_tau_eff(optimizer, kwargs["ratio"])
+        tau_eff = self.get_local_tau_eff(optimizer)
         # self.reset_fednova_optimizer(optimizer)
+        del init_params, optimizer
+        torch.cuda.empty_cache()
         return sum(epoch_loss) / len(epoch_loss), norm_grad, tau_eff
 
 
