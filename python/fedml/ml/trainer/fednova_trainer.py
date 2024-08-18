@@ -8,7 +8,7 @@ import torch.optim as optim
 from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
 from collections import OrderedDict
-
+import numpy as np
 import gc
 """
 FedNova Optimizer implementation cited from https://github.com/JYWa/FedNova/tree/master
@@ -189,6 +189,31 @@ class FedNovaModelTrainer(ClientTrainer):
      #   super().__init__(model, args)
       #  self.dp = dp
 
+    large_laplace_noise = None
+    large_noise_size = 1000000  # Adjust this value as needed
+
+    def cal_sensitivity(self,lr, clip, dataset_size):
+        return 2 * lr * clip / dataset_size
+    
+    def calculate_noise_scale(self):
+        if self.args.mechanism_type == "DP-SGD-laplace":
+            epsilon_single_query = self.args.epsilon
+            return 1 / epsilon_single_query
+        elif self.args.mechanism_type == "DP-SGD-gaussian":
+            epsilon_single_query = self.args.epsilon
+            delta_single_query = self.args.delta
+            return np.sqrt(2 * np.log(1.25 / delta_single_query)) / epsilon_single_query
+    
+    def laplace_noise(self, shape, loc, scale):
+        total_size = torch.Size(shape).numel()
+        if FedNovaModelTrainer.large_laplace_noise is None or total_size > FedNovaModelTrainer.large_noise_size:
+            gen = torch.distributions.Laplace(loc, scale)
+            FedNovaModelTrainer.large_laplace_noise = gen.sample((max(total_size, FedNovaModelTrainer.large_noise_size),))  # Generate on CPU
+            FedNovaModelTrainer.large_noise_size = max(total_size, FedNovaModelTrainer.large_noise_size)
+
+        noise = FedNovaModelTrainer.large_laplace_noise[:total_size].clone().reshape(shape)
+        return noise      
+
     def get_model_params(self):
         return self.model.cpu().state_dict()
 
@@ -246,30 +271,110 @@ class FedNovaModelTrainer(ClientTrainer):
         gc.collect()
         torch.cuda.empty_cache()
         epoch_loss = []
+        mini_batch_size = 8
+        if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):
+            sensitivity = self.cal_sensitivity(self.args.learning_rate, self.args.max_grad_norm, self.args.batch_size)
+            noise_scale = self.calculate_noise_scale()
         for epoch in range(args.epochs):
             batch_loss = []
-            for batch_idx, (x, labels) in enumerate(train_data):
-                x, labels = x.to(device), labels.to(device)
-                model.zero_grad()
-                log_probs = model(x)
-                loss = criterion(log_probs, labels)  # pylint: disable=E1102
-                loss.backward()
+            for batch_idx, (x, labels) in enumerate(train_data): 
+                loss = 0
+                if args.enable_dp_ldp and (args.mechanism_type == "DP-SGD-laplace" or args.mechanism_type == "DP-SGD-gaussian"):                
+                # Initialize accumulated gradients for each parameter
+                    for param in model.parameters():
+                        param.accumulated_grads = torch.zeros_like(param.data, device=device)
 
-                # Uncommet this following line to avoid nan loss
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+                    # Divide the main batch into mini-batches
+                    for start in range(0, x.size(0), mini_batch_size):
+                        end = start + mini_batch_size
+                        x_mini, labels_mini = x[start:end].to(device), labels[start:end].to(device)
 
-                #if self.dp:
-                 #   local_grad = OrderedDict((name, param.grad) for name, param in model.named_parameters() if param.grad is not None)
-                  #  noisy_grad = self.dp.add_local_noise(local_grad)
-                  #  for name, param in model.named_parameters():
-                   #     if param.grad is not None:
-                    #        param.grad = noisy_grad[name]
+                        # Compute gradients for each mini-batch
+                        # optimizer.zero_grad()
+                        output = model(x_mini)
+                        loss = criterion(output, labels_mini)
+                        loss.backward()
+                        #torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
 
-                optimizer.step()
-                #self.local_steps += 1
-                #self.local_normalizing_vec += 1
-                batch_loss.append(loss.item())
-                del log_probs, loss, x, labels
+                        if args.mechanism_type == "DP-SGD-laplace":
+                            for param in model.parameters():
+                                if param.accumulated_grads is not None:
+                                    # Clip the gradients
+                                    clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                        param.accumulated_grads, args.max_grad_norm
+                                    )
+                        elif args.mechanism_type == "DP-SGD-gaussian":
+                            for param in model.parameters():
+                                if param.accumulated_grads is not None:
+                                    # Clip the gradients
+                                    clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                        param.accumulated_grads, args.max_grad_norm
+                                    )
+                        
+
+                        # Accumulate gradients
+                        for param in model.parameters():
+                            if param.grad is not None:
+                                param.accumulated_grads += param.grad
+
+                        # Clip and add noise to the accumulated gradients
+                        
+                        # logging.info("sensitivity * noise_scale= " + str(sensitivity*noise_scale))
+                        for param in model.parameters():
+                            if param.accumulated_grads is not None:
+                                    # # Clip the gradients
+                                    # clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                    #     param.accumulated_grads, args.max_grad_norm
+                                    # )
+                                    # # Add noise
+                                noise = []
+                                if args.mechanism_type == "DP-SGD-laplace":
+                                        # Create a Laplace distribution with mean and std
+                                        # laplace_dist = np.random.laplace(loc=0, scale=sensitivity*noise_scale, size=param.accumulated_grads.shape)
+                                        # Sample noise from the distribution
+                                        # noise = torch.from_numpy(laplace_dist).to(device)
+
+                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=noise_scale*sensitivity*0.01).to(device)
+                                elif args.mechanism_type == "DP-SGD-gaussian":
+                                    noise = torch.normal(
+                                            mean=0,
+                                            std=sensitivity*noise_scale,
+                                            size=param.accumulated_grads.shape,
+                                            device=device
+                                    )
+                                    # if isinstance(noise, list):
+                                    #     noise = torch.tensor(noise, device=device)
+                                    # if noise.shape != param.accumulated_grads.shape:
+                                    #     noise = noise.view_as(param.accumulated_grads)
+                                param.grad = param.accumulated_grads / x.size(0) + noise.to(dtype=param.accumulated_grads.dtype)  # Averaging gradients
+
+                    optimizer.step()
+                    model.zero_grad()
+
+                else:
+                    x, labels = x.to(device), labels.to(device)
+                    model.zero_grad()
+                    log_probs = model(x)
+                    loss = criterion(log_probs, labels)  # pylint: disable=E1102
+                    loss.backward()
+
+                    # Uncommet this following line to avoid nan loss
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+
+                    #if self.dp:
+                    #   local_grad = OrderedDict((name, param.grad) for name, param in model.named_parameters() if param.grad is not None)
+                    #  noisy_grad = self.dp.add_local_noise(local_grad)
+                    #  for name, param in model.named_parameters():
+                    #     if param.grad is not None:
+                        #        param.grad = noisy_grad[name]
+
+                    optimizer.step()
+                    #self.local_steps += 1
+                    #self.local_normalizing_vec += 1
+                step_loss = loss.item()
+
+                batch_loss.append(step_loss)
+                # del log_probs, loss, x, labels
                 torch.cuda.empty_cache() 
                 
             if batch_loss:
