@@ -105,6 +105,7 @@ class ModelTrainerCLS(ClientTrainer):
                         output = model(x_mini)
                         loss = criterion(output, labels_mini)
                         loss.backward()
+                        #torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
 
                         if args.mechanism_type == "DP-SGD-laplace":
                             for param in model.parameters():
@@ -168,7 +169,7 @@ class ModelTrainerCLS(ClientTrainer):
                     labels = labels.long()
                     loss = criterion(log_probs, labels)  # pylint: disable=E1102
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.5)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
                     optimizer.step()
 
                 # Uncommet this following line to avoid nan loss

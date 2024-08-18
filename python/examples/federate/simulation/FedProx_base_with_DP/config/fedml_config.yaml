@@ -15,25 +15,28 @@ train_args:
   federated_optimizer: "FedProx"
   client_id_list: "[]"
   client_num_in_total: 16
-  client_num_per_round: 8
+  client_num_per_round: 6
   comm_round: 100
-  epochs: 2
+  epochs: 5
   batch_size: 32
   client_optimizer: sgd
-  learning_rate: 0.02
+  learning_rate: 0.01
   weight_decay: 0.0001
   server_optimizer: sgd
-  lr: 0.02
-  server_lr: 0.02
+  lr: 0.01
+  server_lr: 0.01
   wd: 0.0001
   server_momentum: 0.9
   mu : 0.0
+  momentum: 0.9
+  dampening: 0.0
+  nesterov: False
 
 validation_args:
   frequency_of_the_test: 2
 
 device_args:
-  worker_num: 10
+  worker_num: 6
   using_gpu: true
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_local
@@ -51,15 +54,15 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: opacus DP-SGD
-  run_name: "FedProx - E=4 delta=1e-5 clip=4 (Gaussian)"
+  wandb_project: DP-SGD Gaussian
+  run_name: "FedProx E=2"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
-  epsilon: 4.0
-  # mechanism_type: gaussian
-  # sensitivity: 1.0
+  epsilon: 2.0
+  #3mechanism_type: laplace
+  #sensitivity: 1.0
   delta: 0.00001
-  max_grad_norm: 4.0
+  max_grad_norm: 2.0
   mechanism_type: DP-SGD-gaussian
