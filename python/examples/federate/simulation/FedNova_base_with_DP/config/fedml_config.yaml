@@ -51,14 +51,14 @@ tracking_args:
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
   wandb_project: DP-SGD Gaussian
-  run_name: "FedNova E=2"
+  run_name: "FedNova E=10"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
-  epsilon: 2.0
+  epsilon: 10.0
   #mechanism_type: laplace
   #sensitivity: 1.0
   delta: 0.00001
-  max_grad_norm: 3
+  max_grad_norm: 3.0
   mechanism_type: DP-SGD-gaussian
