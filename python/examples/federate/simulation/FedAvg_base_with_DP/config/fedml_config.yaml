@@ -20,7 +20,7 @@ train_args:
   epochs: 5 #reduced to 2 from 10
   batch_size: 32
   client_optimizer: sgd
-  learning_rate: 0.01 
+  learning_rate: 0.001 
   weight_decay: 0.0
   gmf: 0.0
   mu : 0.0 #added now
@@ -62,5 +62,5 @@ dp_args:
   #mechanism_type: laplace
   #sensitivity: 1.0
   delta: 0.00001
-  max_grad_norm: 3.0
+  max_grad_norm: 2.0
   mechanism_type: DP-SGD-laplace
