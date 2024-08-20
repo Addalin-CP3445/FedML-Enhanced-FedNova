@@ -9,6 +9,7 @@ from ...core.alg_frame.client_trainer import ClientTrainer
 import logging
 from collections import OrderedDict
 import numpy as np
+from torch.distributions import Laplace
 import gc
 """
 FedNova Optimizer implementation cited from https://github.com/JYWa/FedNova/tree/master
@@ -204,7 +205,13 @@ class FedNovaModelTrainer(ClientTrainer):
             delta_single_query = self.args.delta
             return np.sqrt(2 * np.log(1.25 / delta_single_query)) / epsilon_single_query
     
-    def laplace_noise(self, shape, loc, scale):
+    def laplace_noise(self, shape, loc, scale, device):
+        # Ensure loc and scale are tensors on the correct device
+        if not isinstance(loc, torch.Tensor):
+            loc = torch.tensor(loc, device=device, dtype=torch.float32)
+        if not isinstance(scale, torch.Tensor):
+            scale = torch.tensor(scale, device=device, dtype=torch.float32)
+
         total_size = torch.Size(shape).numel()
         if FedNovaModelTrainer.large_laplace_noise is None or total_size > FedNovaModelTrainer.large_noise_size:
             gen = torch.distributions.Laplace(loc, scale)
@@ -212,7 +219,22 @@ class FedNovaModelTrainer(ClientTrainer):
             FedNovaModelTrainer.large_noise_size = max(total_size, FedNovaModelTrainer.large_noise_size)
 
         noise = FedNovaModelTrainer.large_laplace_noise[:total_size].clone().reshape(shape)
-        return noise      
+        return noise
+
+    def laplace_noise_new(self, shape, loc, scale, device):
+        # Ensure loc and scale are tensors on the correct device
+        if not isinstance(loc, torch.Tensor):
+            loc = torch.tensor(loc, device=device, dtype=torch.float32)
+        if not isinstance(scale, torch.Tensor):
+            scale = torch.tensor(scale, device=device, dtype=torch.float32)
+        
+        # Create a Laplace distribution with the given loc and scale
+        gen = Laplace(loc=loc, scale=scale)
+        
+        # Directly sample noise of the required shape
+        noise = gen.sample(shape)
+        
+        return noise     
 
     def get_model_params(self):
         return self.model.cpu().state_dict()
@@ -334,7 +356,7 @@ class FedNovaModelTrainer(ClientTrainer):
                                         # Sample noise from the distribution
                                         # noise = torch.from_numpy(laplace_dist).to(device)
 
-                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=noise_scale*sensitivity*0.01).to(device)
+                                    noise = self.laplace_noise(param.accumulated_grads.shape, loc=0, scale=noise_scale*sensitivity, device=device)
                                 elif args.mechanism_type == "DP-SGD-gaussian":
                                     noise = torch.normal(
                                             mean=0,
