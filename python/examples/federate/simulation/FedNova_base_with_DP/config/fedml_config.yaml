@@ -20,7 +20,7 @@ train_args:
   epochs: 5 #1 #reduced to 2 from 10
   batch_size: 32 #32
   client_optimizer: sgd
-  learning_rate: 0.001 #0.00106727 
+  learning_rate: 0.01 #0.00106727 
   weight_decay: 0.0001
   gmf: 0.0
   mu : 0.0 #added now
@@ -50,7 +50,7 @@ tracking_args:
    # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: DP-SGD Laplace FedNova
+  wandb_project: DP-SGD Gaussian FedNova
   run_name: "FedNova E=10"
   using_mlops: false
 
@@ -60,5 +60,5 @@ dp_args:
   #mechanism_type: laplace
   #sensitivity: 1.0
   delta: 0.00001
-  max_grad_norm: 2.0
-  mechanism_type: DP-SGD-laplace
+  max_grad_norm: 3.0
+  mechanism_type: DP-SGD-gaussian
