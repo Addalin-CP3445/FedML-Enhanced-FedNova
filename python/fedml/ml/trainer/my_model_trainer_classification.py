@@ -126,21 +126,12 @@ class ModelTrainerCLS(ClientTrainer):
                         loss = criterion(output, labels_mini)
                         loss.backward()
 
-                        if args.mechanism_type == "DP-SGD-laplace":
-                            for param in model.parameters():
-                                if param.accumulated_grads is not None:
-                                    # Clip the gradients
-                                    clip_grad_norm = torch.nn.utils.clip_grad_norm_(
-                                        param.accumulated_grads, args.max_grad_norm
-                                    )
-                        elif args.mechanism_type == "DP-SGD-gaussian":
-                            for param in model.parameters():
-                                if param.accumulated_grads is not None:
-                                    # Clip the gradients
-                                    clip_grad_norm = torch.nn.utils.clip_grad_norm_(
-                                        param.accumulated_grads, args.max_grad_norm
-                                    )
-                        
+                        for param in model.parameters():
+                            if param.accumulated_grads is not None:
+                                # Clip the gradients
+                                clip_grad_norm = torch.nn.utils.clip_grad_norm_(
+                                    param.accumulated_grads, args.max_grad_norm
+                                )
 
                         # Accumulate gradients
                         for param in model.parameters():
