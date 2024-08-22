@@ -15,16 +15,16 @@ train_args:
   federated_optimizer: "FedNova"
   client_id_list: "[]"
   client_num_in_total: 16
-  client_num_per_round: 6  #from 4 to 6
+  client_num_per_round: 6 
   comm_round: 100 
-  epochs: 5 #1 #reduced to 2 from 10
-  batch_size: 32 #32
+  epochs: 5 
+  batch_size: 32 
   client_optimizer: sgd
-  learning_rate: 0.01 #0.00106727 
+  learning_rate: 0.01 
   weight_decay: 0.0001
   gmf: 0.0
-  mu : 0.0 #added now
-  momentum: 0.9 #added now
+  mu : 0.0 
+  momentum: 0.9 
   dampening: 0.0
   nesterov: False
 
@@ -37,28 +37,23 @@ device_args:
   gpu_mapping_file: config/gpu_mapping.yaml
   gpu_mapping_key: mapping_local
 
-# device_args:
-#   using_gpu: false
-#   gpu_id: 0
-
 comm_args:
   backend: "MPI"
   is_mobile: 0
 
 
 tracking_args:
-   # When running on MLOps platform(open.fedml.ai), the default log path is at ~/.fedml/fedml-client/fedml/logs/ and ~/.fedml/fedml-server/fedml/logs/
   enable_wandb: true
   wandb_key: 63a4dccbf22454ee89c03213ddaba326fa6d7460
-  wandb_project: DP-SGD Gaussian FedNova
+  wandb_project: Image Differential Privacy
   run_name: "FedNova E=10"
   using_mlops: false
 
 dp_args:
   enable_dp_ldp: true
   epsilon: 10.0
-  #mechanism_type: laplace
-  #sensitivity: 1.0
-  delta: 0.00001
-  max_grad_norm: 3.0
-  mechanism_type: DP-SGD-gaussian
+  mechanism_type: laplace
+  sensitivity: 1.0
+  # delta: 0.00001
+  # max_grad_norm: 3.0
+  # mechanism_type: DP-SGD-gaussian
